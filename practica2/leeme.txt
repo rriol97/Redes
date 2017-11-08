@@ -1,0 +1,12 @@
+PAREJA 9
+
+Ricardo Riol González
+Alejandro Sánchez Sanz
+
+
+En el archivo comprimido se incluyen además de este archivo de texto:
+	- Los archivos practica1.c, practica1.h y makefile para la realización del ejercicio 1.
+	- Un archivo .pcap generado para comparar después.
+	- La captura de pantalla (practica1captura.png) comparando el archivo .pcap mencionado anteriormente en Wireshark y en consola.
+	- El archivo .pdf del ejercicio 2.
+	- Un directorio con los archivos .pcap sobre los que se han realizado las cuestiones del PDF.
