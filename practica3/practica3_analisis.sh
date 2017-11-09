@@ -30,8 +30,18 @@ TOPS9=./tops/src_port_udp_p.txt
 TOPS10=./tops/dst_port_udp_p.txt
 TOPS11=./tops/src_port_udp_b.txt
 TOPS12=./tops/dst_port_udp_b.txt
-ECDF1=./ecdf/tamanios_origen_ecdf.txt
-ECDF2=./ecdf/tamanios_destino_ecdf.txt
+TAM1_LV2=./ecdf/tamanios_origen_lv2.txt
+TAM2_LV2=./ecdf/tamanios_destino_lv2.txt
+TAM1_LV3=./ecdf/tamanios_origen_http.txt
+TAM2_LV3=./ecdf/tamanios_destino_http.txt
+TAM3_LV3=./ecdf/tamanios_origen_dns.txt
+TAM4_LV3=./ecdf/tamanios_destino_dns.txt
+ECDF1_LV2=./ecdf/tamanios_origen_lv2_ecdf.png
+ECDF2_LV2=./ecdf/tamanios_destino_lv2_ecdf.png
+ECDF1_LV3=./ecdf/tamanios_origen_http_ecdf.png
+ECDF2_LV3=./ecdf/tamanios_destino_http_ecdf.png
+ECDF3_LV3=./ecdf/tamanios_origen_dns_ecdf.png
+ECDF4_LV3=./ecdf/tamanios_destino_dns_ecdf.png
 
 # Obtenemos los porcentajes de cada protocolo de nivel 3
 echo -e "Porcentaje de protocolos de red"
@@ -130,23 +140,24 @@ awk -f ejercicio2.awk $TOPS12 | sort -nr | head
 
 # Obtenemos las ECDF que se nos piden
 echo -e "\nECDF de los tamanios de los paquetes (Mac origen)(Ver grafica)"
-if [ ! -e $ECDF1 ]
+if [ ! -e $TAM1_LV2 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e frame.len -Y 'eth.src eq 00:11:88:CC:33:1' > $ECDF1
+	tshark -r traza_1302_09.pcap -T fields -e frame.len -Y 'eth.src eq 00:11:88:CC:33:1' > $TAM1_LV2
 fi
-sort -n < $ECDF1 | uniq -c | sort -nk 2 > temp.txt
+sort -n < $TAM1_LV2 | uniq -c | sort -nk 2 > temp.txt
 awk -f ejercicio3.awk temp.txt | sort -n > tamanios_origen.txt
 chmod +x realizar_graficas.gp
-./realizar_graficas.gp TamaniosOrigen Tamanios Probabilidades tamanios_origen.txt tamanios_origen_ecdf.png
+./realizar_graficas.gp TamaniosOrigen Tamanios Probabilidades tamanios_origen.txt $ECDF1_LV2
 rm -f tamanios_origen.txt
+
 echo -e "\nECDF de los tamanios de los paquetes (Mac destino)(Ver grafica)"
-if [ ! -e $ECDF2 ]
+if [ ! -e $TAM2_LV2 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e frame.len -Y 'eth.dst eq 00:11:88:CC:33:1' > $ECDF2
+	tshark -r traza_1302_09.pcap -T fields -e frame.len -Y 'eth.dst eq 00:11:88:CC:33:1' > $TAM2_LV2
 fi
-sort -n < $ECDF2 | uniq -c | sort -nk 2 > temp.txt
+sort -n < $TAM2_LV2 | uniq -c | sort -nk 2 > temp.txt
 awk -f ejercicio3.awk temp.txt | sort -n > tamanios_destino.txt
 chmod +x realizar_graficas.gp
-./realizar_graficas.gp TamaniosDestino Tamanios Probabilidades tamanios_destino.txt tamanios_destino_ecdf.png
+./realizar_graficas.gp TamaniosDestino Tamanios Probabilidades tamanios_destino.txt $ECDF2_LV2
 rm -f tamanios_destino.txt
 rm -f temp.txt
