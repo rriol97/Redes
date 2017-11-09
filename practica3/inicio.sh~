@@ -137,4 +137,3 @@ sort -n < $ECDF1 | uniq -c | sort -nk 2 > temp.txt
 awk -f ejercicio3.awk temp.txt | sort -n > salida.txt
 chmod +x realizar_graficas.gp
 ./realizar_graficas.gp
-echo -e "Ricardo es el puto amo"
