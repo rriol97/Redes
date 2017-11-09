@@ -160,4 +160,48 @@ awk -f ejercicio3.awk temp.txt | sort -n > tamanios_destino.txt
 chmod +x realizar_graficas.gp
 ./realizar_graficas.gp TamaniosDestino Tamanios Probabilidades tamanios_destino.txt $ECDF2_LV2
 rm -f tamanios_destino.txt
+
+echo -e "\nECDF de los tamanios de nivel 3 de los paquetes HTTP (TCP origen)(Ver grafica)"
+if [ ! -e $TAM1_LV3 ]
+then
+	tshark -r traza_1302_09.pcap -T fields -e ip.len -Y 'tcp.srcport eq 80' > $TAM1_LV3
+fi
+sort -n < $TAM1_LV3 | uniq -c | sort -nk 2 > temp.txt
+awk -f ejercicio3.awk temp.txt | sort -n > tamanios_origen_http.txt
+chmod +x realizar_graficas.gp
+./realizar_graficas.gp TamaniosOrigenHTTP Tamanios Probabilidades tamanios_origen_http.txt $ECDF1_LV3
+rm -f tamanios_origen_http.txt
+
+echo -e "\nECDF de los tamanios de nivel 3 de los paquetes HTTP (TCP destino)(Ver grafica)"
+if [ ! -e $TAM2_LV3 ]
+then
+	tshark -r traza_1302_09.pcap -T fields -e ip.len -Y 'tcp.dstport eq 80' > $TAM2_LV3
+fi
+sort -n < $TAM2_LV3 | uniq -c | sort -nk 2 > temp.txt
+awk -f ejercicio3.awk temp.txt | sort -n > tamanios_destino_http.txt
+chmod +x realizar_graficas.gp
+./realizar_graficas.gp TamaniosDestinoHTTP Tamanios Probabilidades tamanios_destino_http.txt $ECDF2_LV3
+rm -f tamanios_destino_http.txt
+
+echo -e "\nECDF de los tamanios de nivel 3 de los paquetes DNS (UDP origen)(Ver grafica)"
+if [ ! -e $TAM3_LV3 ]
+then
+	tshark -r traza_1302_09.pcap -T fields -e ip.len -Y 'udp.srcport eq 53' > $TAM3_LV3
+fi
+sort -n < $TAM3_LV3 | uniq -c | sort -nk 2 > temp.txt
+awk -f ejercicio3.awk temp.txt | sort -n > tamanios_origen_dns.txt
+chmod +x realizar_graficas.gp
+./realizar_graficas.gp TamaniosOrigenDNS Tamanios Probabilidades tamanios_origen_dns.txt $ECDF3_LV3
+rm -f tamanios_origen_dns.txt
+
+echo -e "\nECDF de los tamanios de nivel 3 de los paquetes DNS (UDP destino)(Ver grafica)"
+if [ ! -e $TAM4_LV3 ]
+then
+	tshark -r traza_1302_09.pcap -T fields -e ip.len -Y 'udp.dstport eq 53' > $TAM4_LV3
+fi
+sort -n < $TAM4_LV3 | uniq -c | sort -nk 2 > temp.txt
+awk -f ejercicio3.awk temp.txt | sort -n > tamanios_destino_dns.txt
+chmod +x realizar_graficas.gp
+./realizar_graficas.gp TamaniosDestinoDNS Tamanios Probabilidades tamanios_destino_dns.txt $ECDF4_LV3
+rm -f tamanios_destino_dns.txt
 rm -f temp.txt

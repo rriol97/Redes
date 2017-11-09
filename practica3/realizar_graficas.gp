@@ -17,7 +17,7 @@ set output "$5"
 replot
 
 #set term svg
-#set output "$var5.svg"
+#set output "$5.svg"
 #replot
 
 # Cierra el archivo de salida
