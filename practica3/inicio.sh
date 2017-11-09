@@ -30,7 +30,8 @@ TOPS9=./tops/src_port_udp_p.txt
 TOPS10=./tops/dst_port_udp_p.txt
 TOPS11=./tops/src_port_udp_b.txt
 TOPS12=./tops/dst_port_udp_b.txt
-ECDF1=./ecdf/tamanios.txt
+ECDF1=./ecdf/tamanios_origen_ecdf.txt
+ECDF2=./ecdf/tamanios_destino_ecdf.txt
 
 # Obtenemos los porcentajes de cada protocolo de nivel 3
 echo -e "Porcentaje de protocolos de red"
@@ -128,12 +129,24 @@ awk -f ejercicio2.awk $TOPS12 | sort -nr | head
 
 
 # Obtenemos las ECDF que se nos piden
-echo -e "\nECDF de los tamanios de los paquetes leidos"
+echo -e "\nECDF de los tamanios de los paquetes (Mac origen)(Ver grafica)"
 if [ ! -e $ECDF1 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e frame.len > $ECDF1
+	tshark -r traza_1302_09.pcap -T fields -e frame.len -Y 'eth.src eq 00:11:88:CC:33:1' > $ECDF1
 fi
 sort -n < $ECDF1 | uniq -c | sort -nk 2 > temp.txt
-awk -f ejercicio3.awk temp.txt | sort -n > salida.txt
+awk -f ejercicio3.awk temp.txt | sort -n > tamanios_origen.txt
 chmod +x realizar_graficas.gp
-./realizar_graficas.gp
+./realizar_graficas.gp TamaniosOrigen Tamanios Probabilidades tamanios_origen.txt tamanios_origen_ecdf.png
+rm -f tamanios_origen.txt
+echo -e "\nECDF de los tamanios de los paquetes (Mac destino)(Ver grafica)"
+if [ ! -e $ECDF2 ]
+then
+	tshark -r traza_1302_09.pcap -T fields -e frame.len -Y 'eth.dst eq 00:11:88:CC:33:1' > $ECDF2
+fi
+sort -n < $ECDF2 | uniq -c | sort -nk 2 > temp.txt
+awk -f ejercicio3.awk temp.txt | sort -n > tamanios_destino.txt
+chmod +x realizar_graficas.gp
+./realizar_graficas.gp TamaniosDestino Tamanios Probabilidades tamanios_destino.txt tamanios_destino_ecdf.png
+rm -f tamanios_destino.txt
+rm -f temp.txt

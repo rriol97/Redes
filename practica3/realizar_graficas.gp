@@ -1,28 +1,27 @@
-#!/usr/bin/gnuplot
+#!/bin/bash
 
-# Salida por pantalla simple: sudo apt-get install gnuplot-x11; set term 11
-set term dumb
-
+gnuplot << EOF
 #set data style points
-set title "Titulo"
-set xlabel "etiqueta x"
-set ylabel "etiqueta y"
-plot "salida.txt" using 1:2 with steps title "Datos"
+set title "$1"
+set xlabel "$2"
+set ylabel "$3"
+plot "$4" using 1:2 with steps title "Datos"
 
-# Para salida a un archivo tipo portable network graphics
-set term jpeg
-set output "salida.txt.jpeg"
-replot
+#Para salida a un archivo tipo portable network graphics
+#set term jpeg
+#set output "$5"
+#replot
 
 set term pngcairo
-set output "salida.txt.png"
+set output "$5"
 replot
 
-set term svg
-set output "salida.txt.svg"
-replot
+#set term svg
+#set output "$var5.svg"
+#replot
 
 # Cierra el archivo de salida
 set output
 
-pause -1 "Pulse Enter para continuar"
+quit
+EOF
