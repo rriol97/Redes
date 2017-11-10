@@ -257,7 +257,7 @@ then
 fi
 awk -f ejercicio5.awk $TEMP3_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.sh TiemposOrigenUDP Tiempos_s Probabilidades temp2.txt $ECDF3_LV4 x
+#./realizar_graficas.sh TiemposOrigenUDP Tiempos_s Probabilidades temp2.txt $ECDF3_LV4 x
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo UDP (Puerto UDP destino)(Ver grafica)"
 if [ ! -f $TEMP4_LV4 ]

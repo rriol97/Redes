@@ -1,11 +1,12 @@
 #!/bin/bash
 
-if [ -e $6 ]; then
+if [[ $6 = x* ]]; then
   gnuplot << EOF
   set title "$1"
   set xlabel "$2"
   set ylabel "$3"
-  set logscale "$6"
+  set xrange [0.000001:*]
+  set logscale $6
   plot "$4" using 1:2 with steps title "Datos"
 
   #Para salida a un archivo tipo portable network graphics
@@ -24,6 +25,7 @@ if [ -e $6 ]; then
 EOF
 
 else
+  echo -e "$6"
   gnuplot << EOF
   set title "$1"
   set xlabel "$2"
