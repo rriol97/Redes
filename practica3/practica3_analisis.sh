@@ -68,7 +68,6 @@ then
 	tshark -r traza_1302_09.pcap -T fields -e eth.type -e vlan.etype > $TIPOS
 fi
 awk -f ejercicio1.awk $TIPOS
-awk -f ejer1.awk $TIPOS
 
 # Obtenemos el top 10 de cada una de las categorias que se nos piden
 echo -e "\nTOP 10: IP Origen por paquetes"
@@ -166,7 +165,7 @@ then
 fi
 sort -n < $TAM1_LV2 | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TamaniosOrigen Tamanios Probabilidades temp2.txt $ECDF1_LV2
+./realizar_graficas.gp TamaniosOrigen Tamanios_B Probabilidades temp2.txt $ECDF1_LV2
 
 echo -e "\nECDF de los tamanios de los paquetes (Direccion Mac destino)(Ver grafica)"
 if [ ! -f $TAM2_LV2 ]
@@ -175,7 +174,7 @@ then
 fi
 sort -n < $TAM2_LV2 | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TamaniosDestino Tamanios Probabilidades temp2.txt $ECDF2_LV2
+./realizar_graficas.gp TamaniosDestino Tamanios_B Probabilidades temp2.txt $ECDF2_LV2
 
 echo -e "\nECDF de los tamanios de nivel 3 de los paquetes HTTP (Puerto TCP origen)(Ver grafica)"
 if [ ! -f $TAM1_LV3 ]
@@ -184,7 +183,7 @@ then
 fi
 sort -n < $TAM1_LV3 | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TamaniosOrigenHTTP Tamanios Probabilidades temp2.txt $ECDF1_LV3
+./realizar_graficas.gp TamaniosOrigenHTTP Tamanios_B Probabilidades temp2.txt $ECDF1_LV3
 
 echo -e "\nECDF de los tamanios de nivel 3 de los paquetes HTTP (Puerto TCP destino)(Ver grafica)"
 if [ ! -f $TAM2_LV3 ]
@@ -193,7 +192,7 @@ then
 fi
 sort -n < $TAM2_LV3 | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TamaniosDestinoHTTP Tamanios Probabilidades temp2.txt $ECDF2_LV3
+./realizar_graficas.gp TamaniosDestinoHTTP Tamanios_B Probabilidades temp2.txt $ECDF2_LV3
 
 echo -e "\nECDF de los tamanios de nivel 3 de los paquetes DNS (Puerto UDP origen)(Ver grafica)"
 if [ ! -f $TAM3_LV3 ]
@@ -202,7 +201,7 @@ then
 fi
 sort -n < $TAM3_LV3 | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TamaniosOrigenDNS Tamanios Probabilidades temp2.txt $ECDF3_LV3
+./realizar_graficas.gp TamaniosOrigenDNS Tamanios_B Probabilidades temp2.txt $ECDF3_LV3
 
 echo -e "\nECDF de los tamanios de nivel 3 de los paquetes DNS (Puerto UDP destino)(Ver grafica)"
 if [ ! -f $TAM4_LV3 ]
@@ -211,7 +210,7 @@ then
 fi
 sort -n < $TAM4_LV3 | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TamaniosDestinoDNS Tamanios Probabilidades temp2.txt $ECDF4_LV3
+./realizar_graficas.gp TamaniosDestinoDNS Tamanios_B Probabilidades temp2.txt $ECDF4_LV3
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo TCP (Direccion IP origen)(Ver grafica)"
 if [ ! -f $TEMP1_LV4 ]
@@ -220,7 +219,8 @@ then
 fi
 awk -f ejercicio5.awk $TEMP1_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TiemposOrigenTCP Tiempos Probabilidades temp2.txt $ECDF1_LV4
+
+./realizar_graficas.gp TiemposOrigenTCP Tiempos_s Probabilidades temp2.txt $ECDF1_LV4
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo TCP (Direccion IP destino)(Ver grafica)"
 if [ ! -f $TEMP2_LV4 ]
@@ -229,7 +229,8 @@ then
 fi
 awk -f ejercicio5.awk $TEMP2_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TiemposDestinoTCP Tiempos Probabilidades temp2.txt $ECDF2_LV4
+
+./realizar_graficas.gp TiemposDestinoTCP Tiempos_s Probabilidades temp2.txt $ECDF2_LV4
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo UDP (Puerto UDP origen)(Ver grafica)"
 if [ ! -f $TEMP3_LV4 ]
@@ -238,7 +239,7 @@ then
 fi
 awk -f ejercicio5.awk $TEMP3_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TiemposOrigenUDP Tiempos Probabilidades temp2.txt $ECDF3_LV4
+./realizar_graficas.gp TiemposOrigenUDP Tiempos_s Probabilidades temp2.txt $ECDF3_LV4
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo UDP (Puerto UDP destino)(Ver grafica)"
 if [ ! -f $TEMP4_LV4 ]
@@ -247,7 +248,7 @@ then
 fi
 awk -f ejercicio5.awk $TEMP4_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-./realizar_graficas.gp TiemposOrigenUDP Tiempos Probabilidades temp2.txt $ECDF4_LV4
+./realizar_graficas.gp TiemposDestinoUDP Tiempos_s Probabilidades temp2.txt $ECDF4_LV4
 
 
 # Obtenemos la serie temporal del caudal
@@ -257,7 +258,7 @@ then
 	tshark -r traza_1302_09.pcap -T fields -e frame.time_relative -e frame.len -Y 'eth.src eq 00:11:88:CC:33:1' > $SERIE1
 fi
 awk -f ejercicio4.awk $SERIE1 | sort -n > temp1.txt
-./realizar_graficas.gp CaudalOrigen Tiempo Tamanio temp1.txt $FIG1
+./realizar_graficas.gp CaudalOrigen Tiempos_s Tamanio_b temp1.txt $FIG1
 
 echo -e "\nSerie del caudal en b/s (Direccion MAC destino)(Ver grafica)"
 if [ ! -f $SERIE2 ]
@@ -265,7 +266,7 @@ then
 	tshark -r traza_1302_09.pcap -T fields -e frame.time_relative -e frame.len -Y 'eth.dst eq 00:11:88:CC:33:1' > $SERIE2
 fi
 awk -f ejercicio4.awk $SERIE2 | sort -n > temp1.txt
-./realizar_graficas.gp CaudalDestino Tiempo Tamanio temp1.txt $FIG2
+./realizar_graficas.gp CaudalDestino Tiempos_s Tamanio_b temp1.txt $FIG2
 
 #rm -f temp?.txt
 
