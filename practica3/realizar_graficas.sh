@@ -5,7 +5,7 @@ if [[ $6 = x* ]]; then
   set title "$1"
   set xlabel "$2"
   set ylabel "$3"
-  set xrange [0.000001:*]
+  set xrange [0.0001:*]
   set logscale $6
   plot "$4" using 1:2 with steps title "Datos"
 
