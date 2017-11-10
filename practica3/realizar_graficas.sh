@@ -25,7 +25,6 @@ if [[ $6 = x* ]]; then
 EOF
 
 else
-  echo -e "$6"
   gnuplot << EOF
   set title "$1"
   set xlabel "$2"
