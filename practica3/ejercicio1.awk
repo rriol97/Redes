@@ -13,6 +13,6 @@ END {
 	print "El porcentaje de paquetes IP es", suma/total*100"%";
 	printf "\nEl porcentaje de protocolos sobre IP es el siguiente:\n";
 	for (i in acumulador) {
-		print i,acumulador[i]/total*100"%";
+		print i,acumulador[i]/suma*100"%";
 	}
 }
