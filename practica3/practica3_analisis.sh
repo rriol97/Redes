@@ -65,7 +65,7 @@ FIG2=./figuras/fig_caudal_destino.png
 echo -e "Porcentaje de protocolos de red"
 if [ ! -f $TIPOS ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e eth.type -e vlan.etype > $TIPOS
+	tshark -r traza_1302_09.pcap -T fields -e eth.type -e ip.proto -e vlan.etype > $TIPOS
 fi
 awk -f ejercicio1.awk $TIPOS
 
