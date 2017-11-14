@@ -219,7 +219,7 @@ then
 	tshark -r traza_1302_09.pcap -T fields -e frame.time_relative -e frame.len -Y 'eth.src eq 00:11:88:CC:33:1' > $SERIE1
 fi
 awk -f ejercicio4.awk $SERIE1 | sort -n > temp1.txt
-./realizar_graficas.sh CaudalOrigen Tiempos_s Tamanio_b temp1.txt $FIG1
+./realizar_graficas.sh CaudalOrigen Tiempos_s Tamanio_b temp1.txt $FIG1 figura
 
 echo -e "\nSerie del caudal en b/s (Direccion MAC destino)(Ver grafica)"
 if [ ! -f $SERIE2 ]
@@ -227,7 +227,7 @@ then
 	tshark -r traza_1302_09.pcap -T fields -e frame.time_relative -e frame.len -Y 'eth.dst eq 00:11:88:CC:33:1' > $SERIE2
 fi
 awk -f ejercicio4.awk $SERIE2 | sort -n > temp1.txt
-./realizar_graficas.sh CaudalDestino Tiempos_s Tamanio_b temp1.txt $FIG2
+./realizar_graficas.sh CaudalDestino Tiempos_s Tamanio_b temp1.txt $FIG2 figura
 
 # Obtenemos las ECDF de los tiempos entre llegadas que se nos piden
 echo -e "\nECDF de los tiempos entre llegadas del flujo TCP (Direccion IP origen)(Ver grafica)"
