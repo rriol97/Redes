@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#Para los tiempos entre llegadas
 if [[ $6 = x* ]]; then
   gnuplot << EOF
   set title "$1"
