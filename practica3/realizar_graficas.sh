@@ -1,7 +1,9 @@
 #!/bin/bash
 
+if [ ! -s $4 ];then
+  echo -e "El fichero no contiene datos\n"
 #Para los tiempos entre llegadas
-if [[ $6 = x* ]]; then
+elif [[ $6 = x* ]]; then
   gnuplot << EOF
   set title "$1"
   set xlabel "$2"
