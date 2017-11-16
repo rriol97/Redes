@@ -1,4 +1,0 @@
-La dirección MAC que deberá tener en cuenta es: 00:11:88:CC:33:1
-La dirección IP (origen o destino) del flujo TCP que deberá tener en cuenta es: 81.84.126.202
-El puerto (origen o destino) del flujo UDP que deberá tener en cuenta es: 54771
-El puerto (origen o destino) del flujo UDP que deberá tener en cuenta es: 54771

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ ! -s $4 ];then
+if [ ! -s $4 ]; then
   echo -e "El fichero no contiene datos\n"
 #Para los tiempos entre llegadas
 elif [[ $6 = x* ]]; then
@@ -26,6 +26,7 @@ elif [[ $6 = x* ]]; then
 
   quit
 EOF
+#Para las series temporales
 elif [[ $6 = f* ]];then
   gnuplot << EOF
   set title "$1"

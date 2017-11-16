@@ -1,0 +1,11 @@
+PAREJA 9
+
+Ricardo Riol González
+Alejandro Sánchez Sanz
+
+
+En el archivo comprimido se incluyen los dos ficheros obligatorios (los dos primeros) y además los ficheros auxiliares que emplea el script. En resumen:
+	- El script que se debe ejecutar para generar todos los resultados: practica3_analisis.sh
+	- La memoria que explica y analiza todos los resultados obtenidos en el script: practica3_memoria.pdf
+	- Adicionalmente, se incluye un script que es llamado por el script general del análisis para generar las gráficas de GNUplot: realizar_graficas.sh
+	- También de modo adicional, se incluyen los ficheros awk para la realización de cada ejercicio: ejercicio1.awk, ejercicio2.awk, ... , ejercicio5.awk
