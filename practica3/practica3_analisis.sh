@@ -73,28 +73,28 @@ awk -f ejercicio1.awk $TIPOS
 echo -e "\nTOP 10: IP Origen por paquetes"
 if [ ! -f $TOPS1 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e ip.src > $TOPS1
+	tshark -r traza_1302_09.pcap -T fields -e ip.src -Y 'ip' > $TOPS1
 fi
 sort -n < $TOPS1 | uniq -c | sort -nr | head
 
 echo -e "\nTOP 10: IP Destino por paquetes"
 if [ ! -f $TOPS2 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e ip.dst > $TOPS2
+	tshark -r traza_1302_09.pcap -T fields -e ip.dst  -Y 'ip' > $TOPS2
 fi
 sort -n < $TOPS2 | uniq -c | sort -nr | head
 
 echo -e "\nTOP 10: IP Origen por bytes"
 if [ ! -f $TOPS3 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e ip.src -e frame.len > $TOPS3
+	tshark -r traza_1302_09.pcap -T fields -e ip.src -e frame.len   -Y 'ip'> $TOPS3
 fi
 awk -f ejercicio2.awk $TOPS3 | sort -nr | head
 
 echo -e "\nTOP 10: IP Destino por bytes"
 if [ ! -f $TOPS4 ]
 then
-	tshark -r traza_1302_09.pcap -T fields -e ip.dst -e frame.len > $TOPS4
+	tshark -r traza_1302_09.pcap -T fields -e ip.dst -e frame.len   -Y 'ip'> $TOPS4
 fi
 awk -f ejercicio2.awk $TOPS4 | sort -nr | head
 
