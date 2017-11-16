@@ -237,7 +237,6 @@ then
 fi
 awk -f ejercicio5.awk $TEMP1_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-
 ./realizar_graficas.sh TiemposOrigenTCP Tiempos_s Probabilidades temp2.txt $ECDF1_LV4 x
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo TCP (Direccion IP destino)(Ver grafica)"
@@ -247,7 +246,6 @@ then
 fi
 awk -f ejercicio5.awk $TEMP2_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
-
 ./realizar_graficas.sh TiemposDestinoTCP Tiempos_s Probabilidades temp2.txt $ECDF2_LV4 x
 
 echo -e "\nECDF de los tiempos entre llegadas del flujo UDP (Puerto UDP origen)(Ver grafica)"
@@ -268,5 +266,5 @@ awk -f ejercicio5.awk $TEMP4_LV4 | sort -n | uniq -c > temp1.txt
 awk -f ejercicio3.awk temp1.txt | sort -n > temp2.txt
 ./realizar_graficas.sh TiemposDestinoUDP Tiempos_s Probabilidades temp2.txt $ECDF4_LV4 x
 
-
-#rm -f temp?.txt
+echo -e "Se ha realizado el analisis con exito"
+rm -f temp?.txt
