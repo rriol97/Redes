@@ -194,7 +194,7 @@ int main(int argc, char **argv){
 
 uint8_t enviar(uint8_t* mensaje, uint64_t longitud,uint16_t* pila_protocolos,void *parametros){
 	uint16_t protocolo=pila_protocolos[0];
-printf("Enviar(%"PRIu16") %s %d.\n",protocolo,__FILE__,__LINE__);
+	printf("Enviar(%"PRIu16") %s %d.\n",protocolo,__FILE__,__LINE__);
 	if(protocolos_registrados[protocolo]==NULL){
 		printf("Protocolo %"PRIu16" desconocido\n",protocolo);
 		return ERROR;
@@ -219,31 +219,33 @@ printf("Enviar(%"PRIu16") %s %d.\n",protocolo,__FILE__,__LINE__);
 * Retorno: OK/ERROR									*
 ****************************************************************************************/
 
-uint8_t moduloUDP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
+uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 	uint8_t segmento[UDP_SEG_MAX]={0};
-	uint16_t puerto_origen = 0,suma_control=0;
+	uint16_t puerto_origen = 0, puerto_destino = 0, suma_control=0;
 	uint16_t aux16;
 	uint32_t pos=0;
 	uint16_t protocolo_inferior=pila_protocolos[1];
-printf("modulo UDP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
+	printf("modulo UDP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
-	if (longitud>(pow(2,16)-UDP_HLEN)){
-		printf("Error: mensaje demasiado grande para UDP (%f).\n",(pow(2,16)-UDP_HLEN));
+	if (longitud>(pow(2,16)-IP_HLEN-UDP_HLEN)){
+		printf("Error: mensaje demasiado grande para UDP (%f).\n",(pow(2,16)-IP_HLEN-UDP_HLEN));
 		return ERROR;
 	}
 
 	Parametros udpdatos=*((Parametros*)parametros);
-	uint16_t puerto_destino=udpdatos.puerto_destino;
+	puerto_destino=udpdatos.puerto_destino;
 
-//TODO
-//[...] 
-//obtenerPuertoOrigen(·)
+//Puerto origen
+	obtenerPuertoOrigen(&puerto_origen);
 	aux16=htons(puerto_origen);
 	memcpy(segmento+pos,&aux16,sizeof(uint16_t));
 	pos+=sizeof(uint16_t);
 	
 //TODO Completar el segmento [...]
-//[...] 
+//Puerto destino
+	aux16=htons(puerto_destino);
+	memcpy(segmento+pos,&aux16,sizeof(uint16_t));
+	pos+=sizeof(uint16_t);
 //Se llama al protocolo definido de nivel inferior a traves de los punteros registrados en la tabla de protocolos registrados
 	return protocolos_registrados[protocolo_inferior](segmento,longitud+pos,pila_protocolos,parametros);
 }
@@ -275,7 +277,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	pila_protocolos++;
 	uint8_t mascara[IP_ALEN],IP_rango_origen[IP_ALEN],IP_rango_destino[IP_ALEN];
 
-printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
+	printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
 	Parametros ipdatos=*((Parametros*)parametros);
 	uint8_t* IP_destino=ipdatos.IP_destino;
@@ -287,6 +289,11 @@ printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 //[...] 
 //llamada/s a protocolo de nivel inferior [...]
 
+	//version un 4, ihl un 5, tipo de servicio a 0, longitud total calculando con los datos
+	// identificador aleatorio con rand() de un uint16_t, con cuidado de que sea el mismo para todos
+	// los fragmentos del mismo paquete fragmentado; flag y offset(cuidado porque hay que ponerlo dividido entre 8) 
+	// en funcion de si es fragmento o no; ttl un valor parecido a uno de una captura que veamos (64 o 128); protocolo (1 si es ICMP
+	// y 17 si es UDP); checksum se genera con funcion; ip origen se calcula con funcion y la ip destino es parametro
 
 }
 
@@ -339,6 +346,7 @@ printf("modulo ETH(fisica) %s %d.\n",__FILE__,__LINE__);
 uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 //TODO
 //[....]
+	//htons para los campos de 16 bits como son id y n_secuencia
 
 }
 

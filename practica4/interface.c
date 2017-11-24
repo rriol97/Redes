@@ -230,7 +230,7 @@ printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2
 uint8_t obtenerPuertoOrigen(uint16_t* puerto){
 	struct sockaddr_in  sock_addr;
    	int c;
-    	fd_set rfds;   
+    fd_set rfds;   
 	sock = socket( AF_INET, SOCK_DGRAM, 0 );
 	if(sock == -1){
 		perror("El socket no pudo ser creado !\n");
@@ -255,7 +255,7 @@ uint8_t obtenerPuertoOrigen(uint16_t* puerto){
 	}
 	close(sock);
 	sock=-1;
-printf("Retorno obtenerPuertoOrigen():\n");
-printf("\t%"PRIu16"\n",*puerto);
+	printf("Retorno obtenerPuertoOrigen():\n");
+	printf("\t%"PRIu16"\n",*puerto);
 	return OK;
 }
