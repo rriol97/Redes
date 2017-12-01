@@ -290,6 +290,60 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	Parametros ipdatos = *((Parametros*)parametros);
 	IP_destino = ipdatos.IP_destino;
 
+	datagrama = segmento;
+	pos = longitud;
+
+	obtenerIPInterface(interface, IP_origen); // Obtenemos la direccion IP origen
+	obtenerMascaraInterface(interface, mascara); //Obtenemos la mascara de red de la interfaz
+	IP_rango_origen = IP_origen && mascara;
+	IP_rango_destino = IP_destino && macara;
+
+	if (IP_rango_origen == IP_rango_destino){ 
+		// El terminal esta en nuestra misma subred.
+		ARPrequest (interface, IP_destino, ipdatos.ETH_destino); //Obtenemos la mac del terminal (misma subred)
+	} 
+	else {
+		obtenerGateway (interface, &aux8); //Cogemos la IP de la interfaz del router
+		ARPrequest (interface, aux8, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
+	}
+
+	aux16 = 0x4500; // Escrim¡bimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
+	memcopy (datagrama+pos, &aux16, sizeof(uint16_t));
+	pos += sizeof(uint16_t);
+
+	//Calculamos la longitud total (sin fragmentacion)
+
+	//obtenerMTUInterface(interface, aux16); //Obtenemos la MTU del nivel fisico
+	//aux16 = htons(&aux16);
+	//aux16 = aux16 - 20; //Restamos a la MTU el tamanio de la cabecera IP
+	//aux16 = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
+	aux16 = longitud + 20;
+	memcopy(datagrama+pos, &aux16, sizeof(uint16_t));
+	pos += sizeof(uint16_t);
+
+	aux16 = rand();
+	memcopy(datagrama+pos, &aux16, sizeof(uint16_t));
+	pos += sizeof(uint16_t);
+
+	aux16 = 0x4000; // Importante: Son valores especificos porque asumo no fragmentacion
+	memcopy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
+	pos += sizeof(uint16_t);
+
+	aux8 = 0x40; // Tiempo de vida
+	memcopy(datagrama+pos, &aux8, sizeof(uint8_t));
+	pos += sizeof(uint8_t);
+
+	aux8 = 0x11; // Protocolo
+	memcopy(datagrama+pos, &aux8, sizeof(uint8_t));
+	pos += sizeof(uint8_t);
+
+ 	//Checksum se calcula al final
+ 	pos_control = pos;
+
+ 
+
+
+	return protocolos_registrados[protocolo_inferior](segmento,longitud+pos,pila_protocolos,parametros);
 
 //TODO
 //Llamar a ARPrequest(·) adecuadamente y usar ETH_destino de la estructura parametros
