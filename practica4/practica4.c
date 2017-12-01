@@ -164,7 +164,7 @@ int main(int argc, char **argv){
 	printf("Enviado mensaje %"PRIu64", almacenado en %s\n\n\n", cont,fichero_pcap_destino);
 
 		//Luego, un paquete ICMP en concreto un ping
-	pila_protocolos[0]=ICMP_PROTO; pila_protocolos[1]=IP_PROTO; pila_protocolos[2]=0;
+	pila_protocolos[0]=ICMP_PROTO; pila_protocolos[1]=IP_PROTO; pila_protocolos[2]=ETH_PROTO;
 	Parametros parametros_icmp; parametros_icmp.tipo=PING_TIPO; parametros_icmp.codigo=PING_CODE; memcpy(parametros_icmp.IP_destino,IP_destino_red,IP_ALEN);
 	if(enviar((uint8_t*)"Probando a hacer un ping",pila_protocolos,strlen("Probando a hacer un ping"),&parametros_icmp)==ERROR ){
 		printf("Error: enviar(): %s %s %d.\n",errbuf,__FILE__,__LINE__);
@@ -237,15 +237,24 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 
 //Puerto origen
 	obtenerPuertoOrigen(&puerto_origen);
-	aux16=htons(puerto_origen);
+	aux16 = htons(puerto_origen);
 	memcpy(segmento+pos,&aux16,sizeof(uint16_t));
-	pos+=sizeof(uint16_t);
-	
-//TODO Completar el segmento [...]
+	pos += sizeof(uint16_t);
+
 //Puerto destino
-	aux16=htons(puerto_destino);
+	aux16 = htons(puerto_destino);
 	memcpy(segmento+pos,&aux16,sizeof(uint16_t));
-	pos+=sizeof(uint16_t);
+	pos += sizeof(uint16_t);
+
+//Longitud
+	aux16 = htons((uint16_t)longitud + UDP_HLEN);
+	memcpy(segmento+pos, &aux16, sizeof(uint16_t));
+	pos += sizeof(uint16_t);
+
+//CheckSum (campo a 0)
+	memcpy(segmento+pos, 0, sizeof(uint16_t));
+	pos += sizeof(uint16_t);
+
 //Se llama al protocolo definido de nivel inferior a traves de los punteros registrados en la tabla de protocolos registrados
 	return protocolos_registrados[protocolo_inferior](segmento,longitud+pos,pila_protocolos,parametros);
 }
@@ -274,13 +283,13 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	uint8_t IP_origen[IP_ALEN];
 	uint16_t protocolo_superior=pila_protocolos[0];
 	uint16_t protocolo_inferior=pila_protocolos[2];
-	pila_protocolos++;
 	uint8_t mascara[IP_ALEN],IP_rango_origen[IP_ALEN],IP_rango_destino[IP_ALEN];
-
+	uint8_t* IP_destino = NULL;
 	printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
-	Parametros ipdatos=*((Parametros*)parametros);
-	uint8_t* IP_destino=ipdatos.IP_destino;
+	Parametros ipdatos = *((Parametros*)parametros);
+	IP_destino = ipdatos.IP_destino;
+
 
 //TODO
 //Llamar a ARPrequest(·) adecuadamente y usar ETH_destino de la estructura parametros
