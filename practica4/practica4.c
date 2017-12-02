@@ -286,6 +286,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	uint16_t protocolo_inferior=pila_protocolos[2];
 	uint8_t mascara[IP_ALEN],IP_rango_origen[IP_ALEN],IP_rango_destino[IP_ALEN];
 	uint8_t* IP_destino = NULL;
+	uint8_t checksum[2]={0};
 	printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
 	Parametros ipdatos = *((Parametros*)parametros);
@@ -368,10 +369,11 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
  		pos += sizeof(uint8_t);
  	}
 
- 	//Calculamos el CheckSum y lo escribimos en el luegar correspondiente
- 	calcularChecksum(longitud+pos, datagrama, &aux8);
- 	datagrama[pos_control+sizeof(uint8_t)] = aux8;
- 	
+ 	//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
+ 	calcularChecksum(longitud+pos, datagrama, checksum);
+ 	datagrama[pos_control] = checksum[0]; //no se como sebrescribir los 0.
+ 	datagrama[pos_control+1] = checksum[1];
+
 	return protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,parametros);
 
 //TODO
