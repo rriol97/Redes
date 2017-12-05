@@ -155,7 +155,7 @@ int main(int argc, char **argv){
 		//Rellenamos los parametros necesario para enviar el paquete a su destinatario y proceso
 	Parametros parametros_udp; memcpy(parametros_udp.IP_destino,IP_destino_red,IP_ALEN); parametros_udp.puerto_destino=puerto_destino;
 		//Enviamos
-	if(enviar((uint8_t*)data,pila_protocolos,strlen(data),&parametros_udp)==ERROR ){
+	if(enviar((uint8_t*)data,strlen(data),pila_protocolos,&parametros_udp)==ERROR ){
 		printf("Error: enviar(): %s %s %d.\n",errbuf,__FILE__,__LINE__);
 		return ERROR;
 	}
@@ -287,13 +287,14 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	uint8_t mascara[IP_ALEN],IP_rango_origen[IP_ALEN],IP_rango_destino[IP_ALEN];
 	uint8_t* IP_destino = NULL;
 	uint8_t checksum[2]={0};
+
 	printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
 	Parametros ipdatos = *((Parametros*)parametros);
 	IP_destino = ipdatos.IP_destino;
 
-	datagrama = segmento;
-	pos = longitud;
+	datagrama = segmento; // controlar tamaños??
+	pos = longitud; // casting??
 
 	obtenerIPInterface(interface, IP_origen); // Obtenemos la direccion IP origen
 	obtenerMascaraInterface(interface, mascara); //Obtenemos la mascara de red de la interfaz
@@ -309,22 +310,22 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 
 	if (flag == 1){ 
 		// El terminal esta en nuestra misma subred.
-		ARPrequest (interface, IP_destino, ipdatos.ETH_destino); //Obtenemos la mac del terminal (misma subred)
+		ARPrequest(interface, IP_destino, ipdatos.ETH_destino); //Obtenemos la mac del terminal (misma subred)
 	} 
 	else {
-		obtenerGateway (interface, &aux8); //Cogemos la IP de la interfaz del router
-		ARPrequest (interface, aux8, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
+		obtenerGateway(interface, &aux8); //Cogemos la IP de la interfaz del router
+		ARPrequest(interface, aux8, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
 	}
 
-	aux16 = 0x4500; // Escrim¡bimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
-	memcopy (datagrama+pos, &aux16, sizeof(uint16_t));
+	aux16 = 0x4500; // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
+	memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
 	//Calculamos la longitud total (sin fragmentacion)
 
-	obtenerMTUInterface(interface, aux16); //Obtenemos la MTU del nivel fisico
-	aux16 = htons(&aux16);
-	aux16 = aux16 - 20; //Restamos a la MTU el tamanio de la cabecera IP
+	obtenerMTUInterface(interface, &aux16); //Obtenemos la MTU del nivel fisico
+	aux16 = htons(aux16);
+	aux16 = aux16 - IP_HLEN; //Restamos a la MTU el tamanio de la cabecera IP
 	aux16 = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
 
 	if ((uint16_t)longitud > aux16){
@@ -332,48 +333,52 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		return ERROR;
 	}
 
-	aux16 = (uint16_t)longitud + 20;
-	memcopy(datagrama+pos, &aux16, sizeof(uint16_t));
+	// Campo longitud total
+	aux16 = (uint16_t)longitud + IP_HLEN;
+	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
-	aux16 = rand();
-	memcopy(datagrama+pos, &aux16, sizeof(uint16_t));
+	// Campo identificador (cuidado, el mismo para todos los fragmentos del mismo paquete)
+	aux16 = rand(); // srand??
+	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
 	aux16 = 0x4000; // Importante: Son valores especificos porque asumo no fragmentacion
-	memcopy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
+	memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
 	pos += sizeof(uint16_t);
 
 	aux8 = 0x40; // Tiempo de vida
-	memcopy(datagrama+pos, &aux8, sizeof(uint8_t));
+	memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
 	pos += sizeof(uint8_t);
+
 	//He supuesto UDP
 	aux8 = 0x11; // Protocolo
-	memcopy(datagrama+pos, &aux8, sizeof(uint8_t));
+	memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
 	pos += sizeof(uint8_t);
 
  	//Checksum se calcula al final. Ponemos un 0. Una vez calculado se sustituira por el valor correspondiente
- 	memcopy(datagrama+pos, 0, sizeof(uint16_t));
+ 	memcpy(datagrama+pos, 0, sizeof(uint16_t));
  	pos_control = pos;
  	pos += sizeof(uint16_t);
 
  	//Direccion IP origen
  	for (i = 0; i < IP_ALEN; i++){
- 		memcopy(datagrama+pos, &(IP_origen[i]), sizeof(uint8_t));
+ 		memcpy(datagrama+pos, &(IP_origen[i]), sizeof(uint8_t));
  		pos += sizeof(uint8_t);
  	}
 
  	//Direccion IP destino
  	for (i = 0; i < IP_ALEN; i++){
- 		memcopy(datagrama+pos, &(IP_destino[i]), sizeof(uint8_t));
+ 		memcpy(datagrama+pos, &(IP_destino[i]), sizeof(uint8_t));
  		pos += sizeof(uint8_t);
  	}
 
  	//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
  	calcularChecksum(longitud+pos, datagrama, checksum);
- 	datagrama[pos_control] = checksum[0]; //no se como sebrescribir los 0.
+ 	datagrama[pos_control] = checksum[0]; //no se como sobrescribir los 0.
  	datagrama[pos_control+1] = checksum[1];
 
+ 	// No se hacia pila_protocolos++ o algo asi??
 	return protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,parametros);
 
 //TODO
