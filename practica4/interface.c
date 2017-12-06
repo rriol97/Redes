@@ -53,8 +53,8 @@ uint8_t ARPrequest(char* interface, uint8_t* IP, uint8_t* retorno){
 		printf("La dirección IP a traducir es inalcanzable (Puede ser problemas de configuración de la subred o que no responda): %s\n",comando);
 		return ERROR;
 	}
-printf("Retorno ARPrequest(%s):\n",IP_char);
-printf("\t%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\n",
+	printf("Retorno ARPrequest(%s):\n",IP_char);
+	printf("\t%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\n",
           retorno[0],retorno[1],retorno[2],retorno[3],retorno[4],retorno[5]);
 	return OK;
 }
@@ -85,8 +85,8 @@ uint8_t obtenerMACdeInterface(char* interface, uint8_t* retorno){
 	}
 	close(fd);
 	memcpy(retorno,ifr.ifr_hwaddr.sa_data,sizeof(uint8_t)*6);
-printf("Retorno obtenerMACdeInterface():\n");
-printf("\t%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\n",
+	printf("Retorno obtenerMACdeInterface():\n");
+	printf("\t%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8":%02"PRIx8"\n",
           retorno[0],retorno[1],retorno[2],retorno[3],retorno[4],retorno[5]);
 	 return OK;
 }
@@ -117,8 +117,8 @@ uint8_t obtenerMascaraInterface(char* interface, uint8_t* retorno){
 	}
 	close(fd);
 	memcpy(retorno,&(*(struct sockaddr_in *)&ifr.ifr_netmask).sin_addr,sizeof(uint8_t)*IP_ALEN);
-printf("Retorno obtenerMascaraInterface():\n");
-printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2],retorno[3]);
+	printf("Retorno obtenerMascaraInterface():\n");
+	printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2],retorno[3]);
 	 return OK;
 }
 
@@ -148,8 +148,8 @@ uint8_t obtenerMTUInterface(char* interface, uint16_t* retorno){
 	}
 	close(fd);
 	*retorno=ifr.ifr_mtu;
-printf("Retorno obtenerMTUInterface():\n");
-printf("\tMTU=%"PRIu16"\n",*retorno);
+	printf("Retorno obtenerMTUInterface():\n");
+	printf("\tMTU=%"PRIu16"\n",*retorno);
 	 return OK;
 }
 
@@ -179,8 +179,8 @@ uint8_t obtenerIPInterface(char * interface, uint8_t* retorno){
 	}
 	close(fd);
 	memcpy(retorno,&(*(struct sockaddr_in *)&ifr.ifr_addr).sin_addr,sizeof(uint8_t)*IP_ALEN);
-printf("Retorno obtenerIPInterface():\n");
-printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2],retorno[3]);
+	printf("Retorno obtenerIPInterface():\n");
+	printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2],retorno[3]);
 	 return OK;
 }
 
@@ -200,7 +200,7 @@ uint8_t obtenerGateway(char * interface, uint8_t* retorno){
 	if(retorno==NULL || interface==NULL)
 		return ERROR;
 	sprintf(comando,"netstat -rn | grep '^\\(default\\|0\\.0\\.0\\.0\\)' | grep %s | awk '{print $2}'",interface);
-//printf("Comando en ejecucion: %s\n",comando);
+	//printf("Comando en ejecucion: %s\n",comando);
 	f = popen(comando, "r");
 	if(f == NULL){
 		printf("Error ejecutando el comando: %s\n",comando);
@@ -213,8 +213,8 @@ uint8_t obtenerGateway(char * interface, uint8_t* retorno){
 		return ERROR;
 	}
 	pclose(f);
-printf("Retorno obtenerGateway():\n");
-printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2],retorno[3]);
+	printf("Retorno obtenerGateway():\n");
+	printf("\t%"PRIu8".%"PRIu8".%"PRIu8".%"PRIu8"\n",retorno[0],retorno[1],retorno[2],retorno[3]);
 	return OK;
 }
 

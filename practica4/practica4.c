@@ -4,8 +4,7 @@
 Compila con warning pues falta usar variables y modificar funciones
  
  Compila: make
- Autor: Jose Luis Garcia Dorado
- 2014 EPS-UAM v2
+ Autores: Alejandro Sanchez Sanz y Ricardo Riol Gonzalez
 ***************************************************************************/
 
 #include <stdio.h>
@@ -38,7 +37,8 @@ int main(int argc, char **argv){
 	uint16_t puerto_destino;
 	char data[IP_DATAGRAM_MAX];
 	uint16_t pila_protocolos[CADENAS];
-
+	FILE *fichero_a_transmitir = NULL;
+	Parametros parametros_udp, parametros_icmp; 
 
 	int long_index=0;
 	char opt;
@@ -79,21 +79,33 @@ int main(int argc, char **argv){
 			case '3' :
 
 				flag_port = 1;
-					//Leemos el puerto a donde transmitir y la almacenamos en orden de hardware
-				puerto_destino=atoi(optarg);
+					//Leemos el puerto a donde transmitir y lo almacenamos en orden de hardware
+				puerto_destino = atoi(optarg);
 				break;
 
 			case '4' :
 
-				if(strcmp(optarg,"stdin")==0) {
-					if (fgets(data, sizeof data, stdin)==NULL) {
-						  	printf("Error leyendo desde stdin: %s %s %d.\n",errbuf,__FILE__,__LINE__);
-						return ERROR;
+				if (strcmp(optarg, "stdin") == 0) {
+					if (fgets(data, sizeof data, stdin) == NULL) {
+						printf("Error leyendo desde stdin: %s %s %d.\n",errbuf,__FILE__,__LINE__);
+						exit(ERROR);
 					}
 					sprintf(fichero_pcap_destino,"%s%s","stdin",".pcap");
 				} else {
 					sprintf(fichero_pcap_destino,"%s%s",optarg,".pcap");
-					//TODO Leer fichero en data [...]
+					fichero_a_transmitir = fopen(optarg, "r");
+					if (fichero_a_transmitir == NULL) {
+						printf("Error leyendo desde el fichero a transmitir: %s %s %d.\n",errbuf,__FILE__,__LINE__);
+						exit(ERROR);
+					}
+					while (fgets(data, sizeof data, fichero_a_transmitir) != NULL);
+					if (strlen(data)%2 != 0) {  // Comprobamos que los datos son pares 
+						strcat(data," ");
+					}
+					if (strlen(data)%2 == 0) {  // Pura comprobacin, luego habra que quitarlo
+						printf("AHORA YA FUNCIONA \n");
+					}
+					fclose(fichero_a_transmitir);
 				}
 				flag_file = 1;
 
@@ -130,12 +142,14 @@ int main(int argc, char **argv){
 	}
 		//Inicializamos las tablas de protocolos
 	if(inicializarPilaEnviar()==ERROR){
-      	printf("Error leyendo desde stdin: %s %s %d.\n",errbuf,__FILE__,__LINE__);
+      	printf("Error iniciando las tablas de protocolos: %s %s %d.\n",errbuf,__FILE__,__LINE__);
 		return ERROR;
 	}
+
 		//Leemos el tamano maximo de transmision del nivel de enlace
 	if(obtenerMTUInterface(interface, &MTU)==ERROR)
 		return ERROR;
+
 		//Descriptor de la interface de red donde inyectar trafico
 	if ((descr = pcap_open_live(interface,MTU+ETH_HLEN,0, 0, errbuf)) == NULL){
 		printf("Error: pcap_open_live(): %s %s %d.\n",errbuf,__FILE__,__LINE__);
@@ -151,21 +165,26 @@ int main(int argc, char **argv){
 		//Formamos y enviamos el trafico, debe enviarse un unico segmento por llamada a enviar() aunque luego se traduzca en mas de un datagrama
 		//Primero un paquete UDP
 		//Definimos la pila de protocolos que queremos seguir
-	pila_protocolos[0]=UDP_PROTO; pila_protocolos[1]=IP_PROTO; pila_protocolos[2]=ETH_PROTO;
-		//Rellenamos los parametros necesario para enviar el paquete a su destinatario y proceso
-	Parametros parametros_udp; memcpy(parametros_udp.IP_destino,IP_destino_red,IP_ALEN); parametros_udp.puerto_destino=puerto_destino;
+	pila_protocolos[0]=UDP_PROTO; 
+	pila_protocolos[1]=IP_PROTO; 
+	pila_protocolos[2]=ETH_PROTO;
+		//Rellenamos los parametros necesarios para enviar el paquete a su destinatario y proceso
+	memcpy(parametros_udp.IP_destino,IP_destino_red,IP_ALEN); 
+	parametros_udp.puerto_destino=puerto_destino;
 		//Enviamos
-	if(enviar((uint8_t*)data,strlen(data),pila_protocolos,&parametros_udp)==ERROR ){
+	if (enviar((uint8_t*)data,strlen(data),pila_protocolos,&parametros_udp)==ERROR){
 		printf("Error: enviar(): %s %s %d.\n",errbuf,__FILE__,__LINE__);
 		return ERROR;
 	}
 	else	cont++;
-
 	printf("Enviado mensaje %"PRIu64", almacenado en %s\n\n\n", cont,fichero_pcap_destino);
 
 		//Luego, un paquete ICMP en concreto un ping
-	pila_protocolos[0]=ICMP_PROTO; pila_protocolos[1]=IP_PROTO; pila_protocolos[2]=ETH_PROTO;
-	Parametros parametros_icmp; parametros_icmp.tipo=PING_TIPO; parametros_icmp.codigo=PING_CODE; memcpy(parametros_icmp.IP_destino,IP_destino_red,IP_ALEN);
+	pila_protocolos[0]=ICMP_PROTO; 
+	pila_protocolos[1]=IP_PROTO;
+	parametros_icmp.tipo=PING_TIPO; 
+	parametros_icmp.codigo=PING_CODE; 
+	memcpy(parametros_icmp.IP_destino,IP_destino_red,IP_ALEN);
 	if(enviar((uint8_t*)"Probando a hacer un ping",pila_protocolos,strlen("Probando a hacer un ping"),&parametros_icmp)==ERROR ){
 		printf("Error: enviar(): %s %s %d.\n",errbuf,__FILE__,__LINE__);
 		return ERROR;
@@ -213,8 +232,8 @@ uint8_t enviar(uint8_t* mensaje, uint64_t longitud,uint16_t* pila_protocolos,voi
 * Descripcion: Esta funcion implementa el modulo de envio UDP				*
 * Argumentos: 										*
 *  -mensaje: mensaje a enviar								*
-*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -longitud: bytes que componen mensaje						*
+*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -parametros: parametros necesario para el envio este protocolo			*
 * Retorno: OK/ERROR									*
 ****************************************************************************************/
@@ -225,37 +244,43 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 	uint16_t aux16;
 	uint32_t pos=0;
 	uint16_t protocolo_inferior=pila_protocolos[1];
+	Parametros udpdatos; 
 	printf("modulo UDP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
-	if (longitud>(pow(2,16)-IP_HLEN-UDP_HLEN)){
-		printf("Error: mensaje demasiado grande para UDP (%f).\n",(pow(2,16)-IP_HLEN-UDP_HLEN));
+	if (longitud>(UDP_SEG_MAX-IP_HLEN-UDP_HLEN)){
+		printf("Error: mensaje demasiado grande para UDP (%f).\n",(UDP_SEG_MAX-IP_HLEN-UDP_HLEN));
 		return ERROR;
 	}
 
-	Parametros udpdatos=*((Parametros*)parametros);
+	udpdatos=*((Parametros*)parametros);
 	puerto_destino=udpdatos.puerto_destino;
 
-//Puerto origen
+		//Puerto origen
 	obtenerPuertoOrigen(&puerto_origen);
 	aux16 = htons(puerto_origen);
 	memcpy(segmento+pos,&aux16,sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
-//Puerto destino
+		//Puerto destino
 	aux16 = htons(puerto_destino);
 	memcpy(segmento+pos,&aux16,sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
-//Longitud
+		//Longitud
 	aux16 = htons((uint16_t)longitud + UDP_HLEN);
 	memcpy(segmento+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
-//CheckSum (campo a 0)
+		//CheckSum (campo a 0)
 	memcpy(segmento+pos, 0, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
-//Se llama al protocolo definido de nivel inferior a traves de los punteros registrados en la tabla de protocolos registrados
+		//Datos
+	memcpy(segmento+pos, mensaje, sizeof(uint8_t));
+	pos += longitud;
+
+
+		//Se llama al protocolo definido de nivel inferior a traves de los punteros registrados en la tabla de protocolos registrados
 	return protocolos_registrados[protocolo_inferior](segmento,longitud+pos,pila_protocolos,parametros);
 }
 
@@ -265,14 +290,12 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 * Descripcion: Esta funcion implementa el modulo de envio IP				*
 * Argumentos: 										*
 *  -segmento: segmento a enviar								*
-*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -longitud: bytes que componen el segmento						*
+*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -parametros: parametros necesario para el envio este protocolo			*
 * Retorno: OK/ERROR									*
 *
 * ***************************************************************************************/
-
-
 
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 	int i, flag = 1;
@@ -287,14 +310,19 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	uint8_t mascara[IP_ALEN],IP_rango_origen[IP_ALEN],IP_rango_destino[IP_ALEN];
 	uint8_t* IP_destino = NULL;
 	uint8_t checksum[2]={0};
+	Parametros ipdatos;
 
 	printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
+	if (longitud>(IP_DATAGRAM_MAX-IP_HLEN)){
+		printf("Error: mensaje demasiado grande para IP (%f).\n",(IP_DATAGRAM_MAX-IP_HLEN));
+		return ERROR;
+	}
 
-	Parametros ipdatos = *((Parametros*)parametros);
+	ipdatos = *((Parametros*)parametros);
 	IP_destino = ipdatos.IP_destino;
 
 	datagrama = segmento; // controlar tamaños??
-	pos = longitud; // casting??
+	pos = (uint32_t)longitud; 
 
 	obtenerIPInterface(interface, IP_origen); // Obtenemos la direccion IP origen
 	obtenerMascaraInterface(interface, mascara); //Obtenemos la mascara de red de la interfaz
@@ -402,8 +430,8 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 * Descripcion: Esta funcion implementa el modulo de envio Ethernet			*
 * Argumentos: 										*
 *  -datagrama: datagrama a enviar							*
-*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -longitud: bytes que componen el datagrama						*
+*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -parametros: Parametros necesario para el envio este protocolo			*
 * Retorno: OK/ERROR									*
 ****************************************************************************************/
@@ -436,8 +464,8 @@ printf("modulo ETH(fisica) %s %d.\n",__FILE__,__LINE__);
 * Descripcion: Esta funcion implementa el modulo de envio ICMP				*
 * Argumentos: 										*
 *  -mensaje: mensaje a anadir a la cabecera ICMP					*
+*  -longitud: bytes que componen mensaje						*
 *  -pila_protocolos: conjunto de protocolos a seguir					*
-*  -longitud: bytes que componen el mensaje						*
 *  -parametros: parametros necesario para el envio este protocolo			*
 * Retorno: OK/ERROR									*
 ****************************************************************************************/
@@ -540,7 +568,10 @@ uint8_t inicializarPilaEnviar() {
 	
 //TODO
 //A registrar los modulos de UDP y ICMP [...] 
-
+	if(registrarProtocolo(UDP_PROTO, moduloUDP, protocolos_registrados)==ERROR)
+		return ERROR;
+	if(registrarProtocolo(ICMP_PROTO, moduloICMP, protocolos_registrados)==ERROR)
+		return ERROR;
 	return OK;
 }
 
