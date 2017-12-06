@@ -499,8 +499,10 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 	uint32_t pos=0, pos_control=0;	
 	uint8_t checksum[2]={0};
 
-	//Comprobar tamanio maximo?????????????
-
+	if (longitud > (ICMP_DATAGRAM_MAX-ICMP_HLEN)){
+		printf("Error: mensaje demasiado grande para ICMP (%f).\n",(ICMP_DATAGRAM_MAX-ICMP_HLEN));
+		return ERROR;
+	}
 	// Tipo (8) y Codigo (0)
 	aux16 = 0x0800;
 	memcpy(segmento, &aux16, sizeof(uint16_t));
