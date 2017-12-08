@@ -164,6 +164,7 @@ int main(int argc, char **argv){
 		//Descriptor del fichero de salida pcap para debugging
 	descr2=pcap_open_dead(datalink,MTU+ETH_HLEN);
 	pdumper=pcap_dump_open(descr2,fichero_pcap_destino);
+	
 
 		//Formamos y enviamos el trafico, debe enviarse un unico segmento por llamada a enviar() aunque luego se traduzca en mas de un datagrama
 		//Primero un paquete UDP
@@ -188,7 +189,7 @@ int main(int argc, char **argv){
 	parametros_icmp.tipo=PING_TIPO; 
 	parametros_icmp.codigo=PING_CODE; 
 	memcpy(parametros_icmp.IP_destino,IP_destino_red,IP_ALEN);
-	if(enviar((uint8_t*)"Probando a hacer un ping",pila_protocolos,strlen("Probando a hacer un ping"),&parametros_icmp)==ERROR ){
+	if(enviar((uint8_t*)"Probando a hacer un ping",strlen("Probando a hacer un ping"),pila_protocolos, &parametros_icmp)==ERROR ){
 		printf("Error: enviar(): %s %s %d.\n",errbuf,__FILE__,__LINE__);
 		return ERROR;
 	}
@@ -208,8 +209,8 @@ int main(int argc, char **argv){
 * Descripcion: Esta funcion envia un mensaje						*
 * Argumentos: 										*
 *  -mensaje: mensaje a enviar								*
-*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -longitud: bytes que componen mensaje						*
+*  -pila_protocolos: conjunto de protocolos a seguir					*
 *  -parametros: parametros necesario para el envio (struct parametros)			*
 * Retorno: OK/ERROR									*
 ****************************************************************************************/
@@ -251,7 +252,7 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 	printf("modulo UDP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 
 	if (longitud>(UDP_SEG_MAX-IP_HLEN-UDP_HLEN)){
-		printf("Error: mensaje demasiado grande para UDP (%f).\n",(UDP_SEG_MAX-IP_HLEN-UDP_HLEN));
+		printf("Error: mensaje demasiado grande para UDP (%d).\n",(UDP_SEG_MAX-IP_HLEN-UDP_HLEN));
 		return ERROR;
 	}
 
@@ -275,7 +276,8 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 	pos += sizeof(uint16_t);
 
 		//CheckSum (campo a 0)
-	memcpy(segmento+pos, 0, sizeof(uint16_t));
+	suma_control = 0x0000;
+	memcpy(segmento+pos, &suma_control, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
 		//Mensaje
@@ -302,11 +304,10 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 	int i, flag = 1;
 	uint8_t datagrama[IP_DATAGRAM_MAX]={0};
-	uint32_t aux32;
 	uint16_t aux16;
 	uint8_t aux8;
 	uint32_t pos=0,pos_control=0;
-	uint8_t IP_origen[IP_ALEN];
+	uint8_t IP_origen[IP_ALEN], IP_gateway[IP_ALEN];
 	uint16_t protocolo_superior=pila_protocolos[0];
 	uint16_t protocolo_inferior=pila_protocolos[2];
 	uint8_t mascara[IP_ALEN], IP_rango_origen[IP_ALEN], IP_rango_destino[IP_ALEN];
@@ -316,7 +317,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 
 	printf("modulo IP(%"PRIu16") %s %d.\n",protocolo_inferior,__FILE__,__LINE__);
 	if (longitud>(IP_DATAGRAM_MAX-IP_HLEN)){
-		printf("Error: mensaje demasiado grande para IP (%f).\n",(IP_DATAGRAM_MAX-IP_HLEN));
+		printf("Error: mensaje demasiado grande para IP (%d).\n",(IP_DATAGRAM_MAX-IP_HLEN));
 		return ERROR;
 	}
 
@@ -334,23 +335,25 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	if (aplicarMascara(IP_destino, mascara, IP_ALEN, IP_rango_destino) == ERROR) {
 		printf("Error aplicando la mascara a la IP de destino\n");
 	}
+	
 
 	for (i = 0; i < IP_ALEN; i++){
 		if (IP_rango_origen[i] != IP_rango_destino[i]){
 			flag = 0;
 		}
 	}
+	
 
 	if (flag == 1){ 
 		// El terminal esta en nuestra misma subred.
 		ARPrequest(interface, IP_destino, ipdatos.ETH_destino); //Obtenemos la mac del terminal (misma subred)
 	} 
 	else {
-		obtenerGateway(interface, &aux8); //Cogemos la IP de la interfaz del router
-		ARPrequest(interface, aux8, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
+		obtenerGateway(interface, IP_gateway); //Cogemos la IP de la interfaz del router
+		ARPrequest(interface, IP_gateway, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
 	}
 
-	aux16 = 0x4500; // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
+	aux16 =0x4500; // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
 	memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
@@ -383,12 +386,13 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	pos += sizeof(uint8_t);
 
 		// Protocolo
-	aux8 = protocolo_superior;
+	aux8 = htons(protocolo_superior);
 	memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
 	pos += sizeof(uint8_t);
 
  		//Checksum se calcula al final. Ponemos un 0. Una vez calculado se sustituira por el valor correspondiente
- 	memcpy(datagrama+pos, 0, sizeof(uint16_t));
+ 	aux16 = 0x0000;	
+ 	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
  	pos_control = pos;
  	pos += sizeof(uint16_t);
 
@@ -448,22 +452,24 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 //[...] Variables del modulo
 	uint16_t aux16;
-	uint8_t eth_src[ETH_ALEN], eth_dst[ETH_ALEN];
+	uint8_t *eth_dst = NULL, eth_src[ETH_ALEN];
 	uint16_t pos = 0;
 	uint8_t trama[ETH_FRAME_MAX]={0};
 	uint16_t protocolo_superior = pila_protocolos[0];
 	Parametros ethdatos;
+	struct pcap_pkthdr cabecera;
+	struct timeval ts;
 
 	printf("modulo ETH(fisica) %s %d.\n",__FILE__,__LINE__);	
 
 //TODO
 //[...] Control de tamano
 	if (longitud > ETH_FRAME_MAX-ETH_HLEN){
-		printf("Error: mensaje demasiado grande para Ethernet (%f).\n",(ETH_FRAME_MAX-ETH_HLEN));
+		printf("Error: mensaje demasiado grande para Ethernet (%d).\n",(ETH_FRAME_MAX-ETH_HLEN));
 		return ERROR;
 	}
 
-	ethdatos = *(Parametros *)parametros;
+	ethdatos = *((Parametros *)parametros);
 	eth_dst = ethdatos.ETH_destino;
 
 //TODO
@@ -477,18 +483,25 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	pos += sizeof(uint8_t)*ETH_ALEN;
 
 		//Tipo Ethernet
-	aux16 = protocolo_superior;
+	aux16 = htons(protocolo_superior);
 	memcpy (trama+pos, &aux16, sizeof(uint16_t));
 	pos+=sizeof(uint16_t);
 
 		//Datagrama
 	memcpy(trama+pos, datagrama, longitud);
-
-
-//TODO
-//Enviar a capa fisica [...]  
-//TODO
-//Almacenamos la salida por cuestiones de debugging [...]
+	mostrarPaquete(trama, longitud+pos);
+		
+	
+	gettimeofday(&ts,NULL);
+	cabecera.ts = ts;
+	cabecera.len = longitud+pos;
+	cabecera.caplen = longitud+pos;
+	
+	//Enviamos todo a la capa fisica
+	pcap_sendpacket(descr, trama, longitud +pos);
+	
+		// Volcamos la salida a un archivo pcap
+	pcap_dump((uint8_t*)pdumper, &cabecera, trama); 
 
 		// Aumentamos la pila de protocolos como en UNIX
 	pila_protocolos++;
@@ -519,7 +532,7 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 
 
 	if (longitud > (ICMP_DATAGRAM_MAX-ICMP_HLEN-IP_HLEN)){
-		printf("Error: mensaje demasiado grande para ICMP (%f).\n",(ICMP_DATAGRAM_MAX-ICMP_HLEN-IP_HLEN));
+		printf("Error: mensaje demasiado grande para ICMP (%d).\n",(ICMP_DATAGRAM_MAX-ICMP_HLEN-IP_HLEN));
 		return ERROR;
 	}
 
@@ -536,19 +549,20 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 	pos += sizeof(uint8_t);
 
 		// Checksum provisional
-	memcpy(datos+pos, 0, sizeof(uint16_t));
+	aux16 = 0x0000;	
+	memcpy(datos+pos, &aux16, sizeof(uint16_t));
 	pos_control = pos;
 	pos += sizeof(uint16_t);
 
 		// Identificador
 	aux16 = htons(rand());
-	memcpy(datos+pos, aux16, sizeof(uint16_t));
+	memcpy(datos+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
 		// Numero de secuencia
 	aux16 = htons(n_secuencia);
 	n_secuencia++;
-	memcpy(datos+pos, aux16, sizeof(uint16_t));
+	memcpy(datos+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
 		// Calculamos checksum
