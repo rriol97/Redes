@@ -271,12 +271,11 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 	pos += sizeof(uint16_t);
 
 		//Longitud
-	aux16 = htons((uint16_t)longitud + UDP_HLEN);
+	aux16 = htons((uint16_t)(longitud + UDP_HLEN));
 	memcpy(segmento+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
 		//CheckSum (campo a 0)
-	suma_control = 0x0000;
 	memcpy(segmento+pos, &suma_control, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
@@ -307,11 +306,10 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	uint16_t aux16;
 	uint8_t aux8;
 	uint32_t pos=0,pos_control=0;
-	uint8_t IP_origen[IP_ALEN], IP_gateway[IP_ALEN];
+	uint8_t IP_origen[IP_ALEN], IP_destino[IP_ALEN], IP_gateway[IP_ALEN];
 	uint16_t protocolo_superior=pila_protocolos[0];
 	uint16_t protocolo_inferior=pila_protocolos[2];
 	uint8_t mascara[IP_ALEN], IP_rango_origen[IP_ALEN], IP_rango_destino[IP_ALEN];
-	uint8_t* IP_destino = NULL;
 	uint8_t checksum[2]={0};
 	Parametros ipdatos;
 
@@ -322,7 +320,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	}
 
 	ipdatos = *((Parametros*)parametros);
-	IP_destino = ipdatos.IP_destino;
+	memcpy(IP_destino, ipdatos.IP_destino, IP_ALEN);
 
 	obtenerIPInterface(interface, IP_origen); // Obtenemos la direccion IP origen
 	obtenerMascaraInterface(interface, mascara); //Obtenemos la mascara de red de la interfaz
@@ -353,7 +351,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		ARPrequest(interface, IP_gateway, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
 	}
 
-	aux16 =0x4500; // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
+	aux16 = htons(0x4500); // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
 	memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
@@ -368,7 +366,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	}
 
 		// Campo longitud total
-	aux16 = htons((uint16_t)longitud + IP_HLEN);
+	aux16 = htons((uint16_t)(longitud + IP_HLEN));
 	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
@@ -377,7 +375,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
-	aux16 = 0x4000; // Importante: Son valores especificos porque asumo no fragmentacion
+	aux16 = htons(0x4000); // Importante: Son valores especificos porque asumo no fragmentacion
 	memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
 	pos += sizeof(uint16_t);
 
@@ -386,7 +384,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	pos += sizeof(uint8_t);
 
 		// Protocolo
-	aux8 = htons(protocolo_superior);
+	aux8 = protocolo_superior;
 	memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
 	pos += sizeof(uint8_t);
 
@@ -410,8 +408,6 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 
  		//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
  	calcularChecksum(pos, datagrama, checksum);
- 	//datagrama[pos_control] = checksum[0];
- 	//datagrama[pos_control+1] = checksum[1];
  	memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
 
  		//Segmento
@@ -420,7 +416,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		// Aumentamos la pila de protocolos como en UNIX
 	pila_protocolos++;
 
-	return protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,parametros);
+	return protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,&ipdatos);
 
 //TODO
 //Llamar a ARPrequest(·) adecuadamente y usar ETH_destino de la estructura parametros
@@ -452,7 +448,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 //[...] Variables del modulo
 	uint16_t aux16;
-	uint8_t *eth_dst = NULL, eth_src[ETH_ALEN];
+	uint8_t eth_dst[ETH_ALEN], eth_src[ETH_ALEN];
 	uint16_t pos = 0;
 	uint8_t trama[ETH_FRAME_MAX]={0};
 	uint16_t protocolo_superior = pila_protocolos[0];
@@ -470,7 +466,7 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	}
 
 	ethdatos = *((Parametros *)parametros);
-	eth_dst = ethdatos.ETH_destino;
+	memcpy(eth_dst, ethdatos.ETH_destino, ETH_ALEN);
 
 //TODO
 		// Direccion Ethernet de origen
@@ -539,12 +535,12 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 	icmpdatos = *(Parametros *)parametros;
 
 		// Tipo (8) del ping
-	aux8 = htons(icmpdatos.tipo);
+	aux8 = icmpdatos.tipo;
 	memcpy(datos+pos, &aux8, sizeof(uint8_t));
 	pos += sizeof(uint8_t);
 
 		// Codigo (0) del ping
-	aux8 = htons(icmpdatos.codigo);
+	aux8 = icmpdatos.codigo;
 	memcpy(datos+pos, &aux8, sizeof(uint8_t));
 	pos += sizeof(uint8_t);
 
@@ -555,7 +551,7 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 	pos += sizeof(uint16_t);
 
 		// Identificador
-	aux16 = htons(rand());
+	aux16 = htons(rand()%MAX_PROTOCOL);
 	memcpy(datos+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
@@ -565,12 +561,13 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 	memcpy(datos+pos, &aux16, sizeof(uint16_t));
 	pos += sizeof(uint16_t);
 
+		// Mensaje
+	memcpy(datos+pos, mensaje, longitud);
+
 		// Calculamos checksum
 	calcularChecksum(longitud+pos, datos, checksum);
 	memcpy(datos+pos_control,checksum,sizeof(uint16_t));
 
-		// Mensaje
-	memcpy(datos+pos, mensaje, longitud);
 
 	return protocolos_registrados[protocolo_inferior](datos,longitud+pos,pila_protocolos,parametros);
 		//htons para los campos de 16 bits como son id y n_secuencia
