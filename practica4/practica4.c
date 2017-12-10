@@ -321,6 +321,9 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		return ERROR;
 	}
 
+		// Aumentamos la pila de protocolos como en UNIX
+	pila_protocolos++;	
+
 	ipdatos = *((Parametros*)parametros);
 	memcpy(IP_destino, ipdatos.IP_destino, IP_ALEN);
 
@@ -355,9 +358,6 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	
 		//Comprobamos si hay fragmentacion.
 	obtenerMTUInterface(interface, &aux16); //Obtenemos la MTU del nivel fisico
-	printf ("aux16UNO: %d\n",aux16);
-	//aux16 = htons(aux16);
-	printf ("aux16DOS: %d\n",aux16);
 	aux16 = aux16 - IP_HLEN; //Restamos a la MTU el tamanio de la cabecera IP
 	long_MTU = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
 	
@@ -379,6 +379,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 
 	for (i = 0; i < num_fragmentos; i++){
 		pos = 0;
+		memset(datagrama, 0, IP_DATAGRAM_MAX);
 		printf ("iteracion %d del bucle\n", i);
 		aux16 = htons(0x4500); // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
 		memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
@@ -406,7 +407,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		pos += sizeof(uint16_t);
 		
 		if (num_fragmentos == 1){
-			aux16 = htons(0x4000); // Importante: Son valores especificos porque asumo no fragmentacion
+			aux16 = htons(0x0000); // Importante: Son valores especificos porque asumo no fragmentacion
 		} else if (i < (num_fragmentos -1)){
 			flags = 0x2000;
 			offset = (i*long_MTU)/8;
@@ -450,9 +451,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
 		
 		printf ("Envio tres cerditos %d\n", i);
-		
-		if (i == 0) // No se si hay que quitarlooo
-			pila_protocolos++;
+	
 		
  		//Segmento
  		if (num_fragmentos == 1){
@@ -469,7 +468,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 			memcpy(datagrama+pos, segmento + long_MTU * i, resto);
 			protocolos_registrados[protocolo_inferior](datagrama,resto+pos,pila_protocolos,&ipdatos);
 		}
-		// Aumentamos la pila de protocolos como en UNIX
+		
 
 
 	}
