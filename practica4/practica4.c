@@ -35,7 +35,7 @@ int main(int argc, char **argv){
 	uint16_t MTU;
 	uint16_t datalink;
 	uint16_t puerto_destino;
-	char data[IP_DATAGRAM_MAX];
+	char data[IP_DATAGRAM_MAX], buffer[IP_DATAGRAM_MAX];
 	uint16_t pila_protocolos[CADENAS];
 	FILE *fichero_a_transmitir = NULL;
 	Parametros parametros_udp, parametros_icmp; 
@@ -101,7 +101,9 @@ int main(int argc, char **argv){
 						printf("Error leyendo desde el fichero a transmitir: %s %s %d.\n",errbuf,__FILE__,__LINE__);
 						exit(ERROR);
 					}
-					while (fgets(data, sizeof data, fichero_a_transmitir) != NULL);
+					while (fgets(buffer, sizeof buffer, fichero_a_transmitir) != NULL){
+						strcat(data,buffer);
+					}	
 					if (strlen(data)%2 != 0) {  // Comprobamos que los datos son pares 
 						strcat(data," ");
 					}
@@ -301,9 +303,9 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 * ***************************************************************************************/
 
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
-	int i, flag = 1;
+	int i, flag, num_fragmentos = 1;
 	uint8_t datagrama[IP_DATAGRAM_MAX]={0};
-	uint16_t aux16;
+	uint16_t aux16, long_MTU, identificador, offset, flags, resto;
 	uint8_t aux8;
 	uint32_t pos=0,pos_control=0;
 	uint8_t IP_origen[IP_ALEN], IP_destino[IP_ALEN], IP_gateway[IP_ALEN];
@@ -350,74 +352,112 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		obtenerGateway(interface, IP_gateway); //Cogemos la IP de la interfaz del router
 		ARPrequest(interface, IP_gateway, ipdatos.ETH_destino); //Pedimos la mac de la interfaz del router
 	}
-
-	aux16 = htons(0x4500); // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
-	memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
-	pos += sizeof(uint16_t);
-
-		//Calculamos la longitud total (sin fragmentacion)
+	
+		//Comprobamos si hay fragmentacion.
 	obtenerMTUInterface(interface, &aux16); //Obtenemos la MTU del nivel fisico
 	aux16 = htons(aux16);
 	aux16 = aux16 - IP_HLEN; //Restamos a la MTU el tamanio de la cabecera IP
-	aux16 = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
+	long_MTU = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
 
 	if ((uint16_t)longitud > aux16){
-		printf ("FRAGMENTAR.\n");
+		num_fragmentos = longitud / long_MTU;
+		resto = longitud % long_MTU;
+		if (resto){
+			num_fragmentos++;
+		}
+	}
+	else{
+		num_fragmentos = 1;
 	}
 
+	for (i = 0; i < num_fragmentos; i++){
+		pos = 0;
+		aux16 = htons(0x4500); // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
+		memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
+		pos += sizeof(uint16_t);
+
 		// Campo longitud total
-	aux16 = htons((uint16_t)(longitud + IP_HLEN));
-	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
-	pos += sizeof(uint16_t);
+		if (num_fragmentos == 1){
+			aux16 = htons((uint16_t)(longitud + IP_HLEN));
+		} 
+		else if (i < (num_fragmentos -1)){
+			aux16 = htons((uint16_t)(long_MTU + IP_HLEN));
+		} 
+		else {
+			aux16 = htons((uint16_t)(resto + IP_HLEN));
+		}
+
+		memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
+		pos += sizeof(uint16_t);
 
 		// Campo identificador (cuidado, el mismo para todos los fragmentos del mismo paquete)
-	aux16 = htons(rand()%MAX_PROTOCOL); 
-	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
-	pos += sizeof(uint16_t);
+		if (i == 0){
+			identificador = htons(rand()%MAX_PROTOCOL);
+		}	 
+		memcpy(datagrama+pos, &identificador, sizeof(uint16_t));
+		pos += sizeof(uint16_t);
+		
+		if (num_fragmentos == 1){
+			aux16 = htons(0x4000); // Importante: Son valores especificos porque asumo no fragmentacion
+		} else if (i < (num_fragmentos -1)){
+			flags = 0x2000;
+			offset = (i*long_MTU)/8;
+			aux16 = htons(flags & offset);
+		} else {
+			aux16 = htons(resto/8);
+		}	
+		
+		memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
+		pos += sizeof(uint16_t);
 
-	aux16 = htons(0x4000); // Importante: Son valores especificos porque asumo no fragmentacion
-	memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
-	pos += sizeof(uint16_t);
-
-	aux8 = 0x40; // Tiempo de vida
-	memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
-	pos += sizeof(uint8_t);
+		aux8 = 0x40; // Tiempo de vida (escogemos un valor comun como 64)
+		memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
+		pos += sizeof(uint8_t);
 
 		// Protocolo
-	aux8 = protocolo_superior;
-	memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
-	pos += sizeof(uint8_t);
+		aux8 = protocolo_superior;
+		memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
+		pos += sizeof(uint8_t);
 
  		//Checksum se calcula al final. Ponemos un 0. Una vez calculado se sustituira por el valor correspondiente
- 	aux16 = 0x0000;	
- 	memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
- 	pos_control = pos;
- 	pos += sizeof(uint16_t);
+		aux16 = 0;	
+		memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
+		pos_control = pos;
+		pos += sizeof(uint16_t);
 
  		//Direccion IP origen
- 	for (i = 0; i < IP_ALEN; i++){
- 		memcpy(datagrama+pos, &(IP_origen[i]), sizeof(uint8_t));
- 		pos += sizeof(uint8_t);
- 	}
+		for (i = 0; i < IP_ALEN; i++){
+			memcpy(datagrama+pos, &(IP_origen[i]), sizeof(uint8_t));
+			pos += sizeof(uint8_t);
+		}
 
  		//Direccion IP destino
- 	for (i = 0; i < IP_ALEN; i++){
- 		memcpy(datagrama+pos, &(IP_destino[i]), sizeof(uint8_t));
- 		pos += sizeof(uint8_t);
- 	}
+		for (i = 0; i < IP_ALEN; i++){
+			memcpy(datagrama+pos, &(IP_destino[i]), sizeof(uint8_t));
+			pos += sizeof(uint8_t);
+		}
 
  		//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
- 	calcularChecksum(pos, datagrama, checksum);
- 	memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
-
+		calcularChecksum(pos, datagrama, checksum);
+		memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
+	
+		pila_protocolos++;
  		//Segmento
-	memcpy(datagrama+pos, segmento, longitud);
-
+ 		if (num_fragmentos == 1){
+			memcpy(datagrama+pos, segmento, longitud);
+			protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,&ipdatos);
+		} else if (i < (num_fragmentos -1)){
+			memcpy(datagrama+pos, segmento + long_MTU * i, long_MTU);
+			protocolos_registrados[protocolo_inferior](datagrama,long_MTU+pos,pila_protocolos,&ipdatos);
+		} else {
+			memcpy(datagrama+pos, segmento + long_MTU * i, resto);
+			protocolos_registrados[protocolo_inferior](datagrama,resto+pos,pila_protocolos,&ipdatos);
+		}
 		// Aumentamos la pila de protocolos como en UNIX
-	pila_protocolos++;
 
-	return protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,&ipdatos);
 
+	}
+	return OK;
 //TODO
 //Llamar a ARPrequest(·) adecuadamente y usar ETH_destino de la estructura parametros
 //[...] 
@@ -485,7 +525,6 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 
 		//Datagrama
 	memcpy(trama+pos, datagrama, longitud);
-	mostrarPaquete(trama, longitud+pos);
 		
 	
 	gettimeofday(&ts,NULL);
