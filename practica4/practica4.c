@@ -303,8 +303,9 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 * ***************************************************************************************/
 
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
-	int i, j, flag, num_fragmentos = 1;
+	int i, flag, num_fragmentos = 1;
 	uint8_t datagrama[IP_DATAGRAM_MAX]={0};
+	char hexa[CADENAS];
 	uint16_t aux16, long_MTU, identificador, offset, flags, resto;
 	uint8_t aux8;
 	uint32_t pos=0,pos_control=0;
@@ -406,14 +407,18 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		memcpy(datagrama+pos, &identificador, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
 		
-		if (num_fragmentos == 1){
-			aux16 = htons(0x0000); // Importante: Son valores especificos porque asumo no fragmentacion
+		//Flags y offset
+		if (num_fragmentos == 1){ 
+			aux16 = htons(0x0000); 
 		} else if (i < (num_fragmentos -1)){
-			flags = 0x2000;
-			offset = (i*long_MTU)/8;
+			flags = 0x3FFF;
+			offset = (0xE000 | ((i*long_MTU)/8));
+			printf("alvaro pesaooo1(%"PRIu16").\n",offset);
 			aux16 = htons(flags & offset);
+			printf("alvaro pesaooo2(%"PRIu16").\n",aux16);
 		} else {
 			aux16 = htons(resto/8);
+			printf("viva la doble(%"PRIu16").\n",aux16);
 		}	
 		
 		memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
@@ -435,16 +440,12 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		pos += sizeof(uint16_t);
 
  		//Direccion IP origen
-		for (j = 0; j < IP_ALEN; j++){
-			memcpy(datagrama+pos, &(IP_origen[i]), sizeof(uint8_t));
-			pos += sizeof(uint8_t);
-		}
+		memcpy(datagrama+pos, IP_origen, IP_ALEN);
+		pos += sizeof(uint8_t)*IP_ALEN;
 
  		//Direccion IP destino
-		for (j = 0; j < IP_ALEN; j++){
-			memcpy(datagrama+pos, &(IP_destino[i]), sizeof(uint8_t));
-			pos += sizeof(uint8_t);
-		}
+		memcpy(datagrama+pos, IP_destino, IP_ALEN);
+		pos += sizeof(uint8_t)*IP_ALEN;
 
  		//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
 		calcularChecksum(pos, datagrama, checksum);
