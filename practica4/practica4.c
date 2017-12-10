@@ -303,7 +303,7 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 * ***************************************************************************************/
 
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
-	int i, flag, num_fragmentos = 1;
+	int i, j, flag, num_fragmentos = 1;
 	uint8_t datagrama[IP_DATAGRAM_MAX]={0};
 	uint16_t aux16, long_MTU, identificador, offset, flags, resto;
 	uint8_t aux8;
@@ -355,11 +355,16 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	
 		//Comprobamos si hay fragmentacion.
 	obtenerMTUInterface(interface, &aux16); //Obtenemos la MTU del nivel fisico
-	aux16 = htons(aux16);
+	printf ("aux16UNO: %d\n",aux16);
+	//aux16 = htons(aux16);
+	printf ("aux16DOS: %d\n",aux16);
 	aux16 = aux16 - IP_HLEN; //Restamos a la MTU el tamanio de la cabecera IP
 	long_MTU = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
-
-	if ((uint16_t)longitud > aux16){
+	
+	printf ("long_MTU: %d\n", long_MTU);
+	printf ("longitud: %d\n", longitud); 
+	
+	if ((uint16_t)longitud > long_MTU){
 		num_fragmentos = longitud / long_MTU;
 		resto = longitud % long_MTU;
 		if (resto){
@@ -369,9 +374,12 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	else{
 		num_fragmentos = 1;
 	}
+	
+	printf ("numero fragmentos: %d\n",num_fragmentos);
 
 	for (i = 0; i < num_fragmentos; i++){
 		pos = 0;
+		printf ("iteracion %d del bucle\n", i);
 		aux16 = htons(0x4500); // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
 		memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
@@ -426,13 +434,13 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		pos += sizeof(uint16_t);
 
  		//Direccion IP origen
-		for (i = 0; i < IP_ALEN; i++){
+		for (j = 0; j < IP_ALEN; j++){
 			memcpy(datagrama+pos, &(IP_origen[i]), sizeof(uint8_t));
 			pos += sizeof(uint8_t);
 		}
 
  		//Direccion IP destino
-		for (i = 0; i < IP_ALEN; i++){
+		for (j = 0; j < IP_ALEN; j++){
 			memcpy(datagrama+pos, &(IP_destino[i]), sizeof(uint8_t));
 			pos += sizeof(uint8_t);
 		}
@@ -440,16 +448,24 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
  		//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
 		calcularChecksum(pos, datagrama, checksum);
 		memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
-	
-		pila_protocolos++;
+		
+		printf ("Envio tres cerditos %d\n", i);
+		
+		if (i == 0) // No se si hay que quitarlooo
+			pila_protocolos++;
+		
  		//Segmento
  		if (num_fragmentos == 1){
+			printf("Enviando paquete entero (1 fragmento)\n");
 			memcpy(datagrama+pos, segmento, longitud);
 			protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,&ipdatos);
 		} else if (i < (num_fragmentos -1)){
+			printf("Enviando paquetes intermedios\n");
 			memcpy(datagrama+pos, segmento + long_MTU * i, long_MTU);
 			protocolos_registrados[protocolo_inferior](datagrama,long_MTU+pos,pila_protocolos,&ipdatos);
 		} else {
+			printf ("iteracion %d del bucle\n", i);
+			printf("Enviando paquete final\n");
 			memcpy(datagrama+pos, segmento + long_MTU * i, resto);
 			protocolos_registrados[protocolo_inferior](datagrama,resto+pos,pila_protocolos,&ipdatos);
 		}
@@ -500,6 +516,7 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 
 //TODO
 //[...] Control de tamano
+	printf ("Longitud ETH %d\n",longitud);
 	if (longitud > ETH_FRAME_MAX-ETH_HLEN){
 		printf("Error: mensaje demasiado grande para Ethernet (%d).\n",(ETH_FRAME_MAX-ETH_HLEN));
 		return ERROR;
