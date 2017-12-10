@@ -18,7 +18,7 @@ pcap_t* descr, *descr2; //Descriptores de la interface de red
 pcap_dumper_t * pdumper;//y salida a pcap
 uint64_t cont=0;	//Contador numero de mensajes enviados
 char interface[10];	//Interface donde transmitir por ejemplo "eth0"
-uint16_t n_secuencia=0;		//Numero de secuencia ICMP
+uint16_t n_secuencia=1;		//Numero de secuencia ICMP
 
 
 void handleSignal(int nsignal){
@@ -106,9 +106,6 @@ int main(int argc, char **argv){
 					}	
 					if (strlen(data)%2 != 0) {  // Comprobamos que los datos son pares 
 						strcat(data," ");
-					}
-					if (strlen(data)%2 == 0) {  // Pura comprobacion, luego habra que quitarlo
-						printf("AHORA YA FUNCIONA \n");
 					}
 					fclose(fichero_a_transmitir);
 				}
@@ -305,7 +302,6 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
 	int i, flag, num_fragmentos = 1;
 	uint8_t datagrama[IP_DATAGRAM_MAX]={0};
-	char hexa[CADENAS];
 	uint16_t aux16, long_MTU, identificador, offset, flags, resto;
 	uint8_t aux8;
 	uint32_t pos=0,pos_control=0;
@@ -362,9 +358,6 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	aux16 = aux16 - IP_HLEN; //Restamos a la MTU el tamanio de la cabecera IP
 	long_MTU = (aux16 / 8) * 8; //Calculamos el menor multiplo de 8 de la cantidad MTU - longitudCabeceraIP
 	
-	printf ("long_MTU: %d\n", long_MTU);
-	printf ("longitud: %d\n", longitud); 
-	
 	if ((uint16_t)longitud > long_MTU){
 		num_fragmentos = longitud / long_MTU;
 		resto = longitud % long_MTU;
@@ -375,13 +368,10 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 	else{
 		num_fragmentos = 1;
 	}
-	
-	printf ("numero fragmentos: %d\n",num_fragmentos);
 
 	for (i = 0; i < num_fragmentos; i++){
 		pos = 0;
 		memset(datagrama, 0, IP_DATAGRAM_MAX);
-		printf ("iteracion %d del bucle\n", i);
 		aux16 = htons(0x4500); // Escribimos en el datagrama los siguientes campos: version, IHL, Tipo de servicio.
 		memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
@@ -413,12 +403,9 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		} else if (i < (num_fragmentos -1)){
 			flags = 0x3FFF;
 			offset = (0xE000 | ((i*long_MTU)/8));
-			printf("alvaro pesaooo1(%"PRIu16").\n",offset);
 			aux16 = htons(flags & offset);
-			printf("alvaro pesaooo2(%"PRIu16").\n",aux16);
 		} else {
 			aux16 = htons(resto/8);
-			printf("viva la doble(%"PRIu16").\n",aux16);
 		}	
 		
 		memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
@@ -451,21 +438,15 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		calcularChecksum(pos, datagrama, checksum);
 		memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
 		
-		printf ("Envio tres cerditos %d\n", i);
-	
 		
  		//Segmento
  		if (num_fragmentos == 1){
-			printf("Enviando paquete entero (1 fragmento)\n");
 			memcpy(datagrama+pos, segmento, longitud);
 			protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,&ipdatos);
 		} else if (i < (num_fragmentos -1)){
-			printf("Enviando paquetes intermedios\n");
 			memcpy(datagrama+pos, segmento + long_MTU * i, long_MTU);
 			protocolos_registrados[protocolo_inferior](datagrama,long_MTU+pos,pila_protocolos,&ipdatos);
 		} else {
-			printf ("iteracion %d del bucle\n", i);
-			printf("Enviando paquete final\n");
 			memcpy(datagrama+pos, segmento + long_MTU * i, resto);
 			protocolos_registrados[protocolo_inferior](datagrama,resto+pos,pila_protocolos,&ipdatos);
 		}
@@ -474,19 +455,6 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 
 	}
 	return OK;
-//TODO
-//Llamar a ARPrequest(·) adecuadamente y usar ETH_destino de la estructura parametros
-//[...] 
-//TODO A implementar el datagrama y fragmentación (en caso contrario, control de tamano)
-//[...] 
-//llamada/s a protocolo de nivel inferior [...]
-
-	//version un 4, ihl un 5, tipo de servicio a 0, longitud total calculando con los datos
-	// identificador aleatorio con rand() de un uint16_t, con cuidado de que sea el mismo para todos
-	// los fragmentos del mismo paquete fragmentado; flag y offset(cuidado porque hay que ponerlo dividido entre 8) 
-	// en funcion de si es fragmento o no; ttl un valor parecido a uno de una captura que veamos (64 o 128); protocolo (1 si es ICMP
-	// y 17 si es UDP); checksum se genera con funcion; ip origen se calcula con funcion y la ip destino es parametro
-
 }
 
 
@@ -502,7 +470,6 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 ****************************************************************************************/
 
 uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
-//[...] Variables del modulo
 	uint16_t aux16;
 	uint8_t eth_dst[ETH_ALEN], eth_src[ETH_ALEN];
 	uint16_t pos = 0;
@@ -514,9 +481,7 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 
 	printf("modulo ETH(fisica) %s %d.\n",__FILE__,__LINE__);	
 
-//TODO
-//[...] Control de tamano
-	printf ("Longitud ETH %d\n",longitud);
+
 	if (longitud > ETH_FRAME_MAX-ETH_HLEN){
 		printf("Error: mensaje demasiado grande para Ethernet (%d).\n",(ETH_FRAME_MAX-ETH_HLEN));
 		return ERROR;
@@ -525,7 +490,6 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	ethdatos = *((Parametros *)parametros);
 	memcpy(eth_dst, ethdatos.ETH_destino, ETH_ALEN);
 
-//TODO
 		// Direccion Ethernet de origen
 	obtenerMACdeInterface(interface, eth_src);
 	memcpy(trama+pos, eth_src, sizeof(uint8_t)*ETH_ALEN);
@@ -549,7 +513,7 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	cabecera.len = longitud+pos;
 	cabecera.caplen = longitud+pos;
 	
-	//Enviamos todo a la capa fisica
+		//Enviamos todo a la capa fisica
 	pcap_sendpacket(descr, trama, longitud +pos);
 	
 		// Volcamos la salida a un archivo pcap
@@ -626,8 +590,6 @@ uint8_t moduloICMP(uint8_t* mensaje,uint64_t longitud, uint16_t* pila_protocolos
 
 
 	return protocolos_registrados[protocolo_inferior](datos,longitud+pos,pila_protocolos,parametros);
-		//htons para los campos de 16 bits como son id y n_secuencia
-
 }
 
 
