@@ -490,13 +490,13 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	ethdatos = *((Parametros *)parametros);
 	memcpy(eth_dst, ethdatos.ETH_destino, ETH_ALEN);
 
+		// Direccion Ethernet de destino
+	memcpy(trama+pos, eth_dst, sizeof(uint8_t)*ETH_ALEN);
+	pos += sizeof(uint8_t)*ETH_ALEN;
+	
 		// Direccion Ethernet de origen
 	obtenerMACdeInterface(interface, eth_src);
 	memcpy(trama+pos, eth_src, sizeof(uint8_t)*ETH_ALEN);
-	pos += sizeof(uint8_t)*ETH_ALEN;
-
-		// Direccion Ethernet de destino
-	memcpy(trama+pos, eth_dst, sizeof(uint8_t)*ETH_ALEN);
 	pos += sizeof(uint8_t)*ETH_ALEN;
 
 		//Tipo Ethernet

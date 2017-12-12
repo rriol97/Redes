@@ -49,7 +49,7 @@
 
 #define ICMP_PROTO 1		// Identificador protocolo ICMP
 #define ICMP_HLEN 8		// Tamano de cabecera ICMP
-#define ICMP_DATAGRAM_MAX 256	// Tamano maximo ICMP (arbitrario, truncar si es necesario)
+#define ICMP_DATAGRAM_MAX 64	// Tamano maximo ICMP (arbitrario, truncar si es necesario)
 
 #define PING_TIPO 8		//Codigo y tipo para PINGs
 #define PING_CODE 0		//
