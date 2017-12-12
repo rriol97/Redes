@@ -1,7 +1,6 @@
 /***************************************************************************
  practica4.c
  Inicio, funciones auxiliares y modulos de transmision implmentados y a implementar de la practica 4.
-Compila con warning pues falta usar variables y modificar funciones
  
  Compila: make
  Autores: Alejandro Sanchez Sanz y Ricardo Riol Gonzalez
@@ -105,7 +104,7 @@ int main(int argc, char **argv){
 						strcat(data,buffer);
 					}	
 					if (strlen(data)%2 != 0) {  // Comprobamos que los datos son pares 
-						strcat(data," ");
+						strcat(data," ");		// y aniadimos un espacio si no
 					}
 					fclose(fichero_a_transmitir);
 				}
@@ -376,7 +375,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		memcpy (datagrama+pos, &aux16, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
 
-		// Campo longitud total
+			// Campo longitud total
 		if (num_fragmentos == 1){
 			aux16 = htons((uint16_t)(longitud + IP_HLEN));
 		} 
@@ -390,14 +389,14 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 		memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
 
-		// Campo identificador (cuidado, el mismo para todos los fragmentos del mismo paquete)
+			// Campo identificador (cuidado, el mismo para todos los fragmentos del mismo paquete)
 		if (i == 0){
 			identificador = htons(rand()%MAX_PROTOCOL);
 		}	 
 		memcpy(datagrama+pos, &identificador, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
 		
-		//Flags y offset
+			// Flags y offset
 		if (num_fragmentos == 1){ 
 			aux16 = htons(0x0000); 
 		} else if (i < (num_fragmentos -1)){
@@ -408,38 +407,38 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 			aux16 = htons(resto/8);
 		}	
 		
-		memcpy(datagrama+pos, &aux16, sizeof(uint16_t)); //Flags y posicion
+		memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 		pos += sizeof(uint16_t);
 
 		aux8 = 0x40; // Tiempo de vida (escogemos un valor comun como 64)
 		memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
 		pos += sizeof(uint8_t);
 
-		// Protocolo
+			// Protocolo
 		aux8 = protocolo_superior;
 		memcpy(datagrama+pos, &aux8, sizeof(uint8_t));
 		pos += sizeof(uint8_t);
 
- 		//Checksum se calcula al final. Ponemos un 0. Una vez calculado se sustituira por el valor correspondiente
+			// Checksum se calcula al final. Ponemos un 0. Una vez calculado se sustituira por el valor correspondiente
 		aux16 = 0;	
 		memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
 		pos_control = pos;
 		pos += sizeof(uint16_t);
 
- 		//Direccion IP origen
+			// Direccion IP origen
 		memcpy(datagrama+pos, IP_origen, IP_ALEN);
 		pos += sizeof(uint8_t)*IP_ALEN;
 
- 		//Direccion IP destino
+			// Direccion IP destino
 		memcpy(datagrama+pos, IP_destino, IP_ALEN);
 		pos += sizeof(uint8_t)*IP_ALEN;
 
- 		//Calculamos el CheckSum y lo escribimos en el lugar correspondiente
+			// Calculamos el CheckSum y lo escribimos en el lugar correspondiente
 		calcularChecksum(pos, datagrama, checksum);
 		memcpy(datagrama+pos_control,checksum,sizeof(uint16_t));
 		
 		
- 		//Segmento
+			// Segmento
  		if (num_fragmentos == 1){
 			memcpy(datagrama+pos, segmento, longitud);
 			protocolos_registrados[protocolo_inferior](datagrama,longitud+pos,pila_protocolos,&ipdatos);
@@ -499,12 +498,12 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	memcpy(trama+pos, eth_src, sizeof(uint8_t)*ETH_ALEN);
 	pos += sizeof(uint8_t)*ETH_ALEN;
 
-		//Tipo Ethernet
+		// Tipo Ethernet
 	aux16 = htons(protocolo_superior);
 	memcpy (trama+pos, &aux16, sizeof(uint16_t));
 	pos+=sizeof(uint16_t);
 
-		//Datagrama
+		// Datagrama
 	memcpy(trama+pos, datagrama, longitud);
 		
 	
@@ -513,7 +512,7 @@ uint8_t moduloETH(uint8_t* datagrama, uint64_t longitud, uint16_t* pila_protocol
 	cabecera.len = longitud+pos;
 	cabecera.caplen = longitud+pos;
 	
-		//Enviamos todo a la capa fisica
+		// Enviamos todo a la capa fisica
 	pcap_sendpacket(descr, trama, longitud +pos);
 	
 		// Volcamos la salida a un archivo pcap

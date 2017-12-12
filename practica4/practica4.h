@@ -2,8 +2,7 @@
  practica4.h
  Definiciones y cabeceras para practica4.c
 
- Autor: Jose Luis Garcia Dorado
- 2014 EPS-UAM 
+ Autores: Alejandro Sanchez Sanz y Ricardo Riol Gonzalez 
 ***************************************************************************/
 
 #ifndef __P4_H
@@ -51,12 +50,12 @@
 #define ICMP_HLEN 8		// Tamano de cabecera ICMP
 #define ICMP_DATAGRAM_MAX 64	// Tamano maximo ICMP (arbitrario, truncar si es necesario)
 
-#define PING_TIPO 8		//Codigo y tipo para PINGs
+#define PING_TIPO 8		// Codigo y tipo para PINGs
 #define PING_CODE 0		//
 
 #define CADENAS 256
 
-#define MAX_PROTOCOL 65536	//Numero maximo identificador protocolo IP
+#define MAX_PROTOCOL 65536	// Numero maximo identificador protocolo IP
 
 #define OK 0
 #define ERROR 1
