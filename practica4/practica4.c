@@ -300,7 +300,7 @@ uint8_t moduloUDP(uint8_t* mensaje, uint64_t longitud, uint16_t* pila_protocolos
 * ***************************************************************************************/
 
 uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos,void *parametros){
-	int i, flag, num_fragmentos = 1;
+	int i, flag = 1, num_fragmentos;
 	uint8_t datagrama[IP_DATAGRAM_MAX]={0};
 	uint16_t aux16, long_MTU, identificador, offset, flags, resto;
 	uint8_t aux8;
