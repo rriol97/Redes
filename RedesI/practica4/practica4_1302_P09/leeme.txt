@@ -1,0 +1,11 @@
+PAREJA 9
+
+Ricardo Riol González
+Alejandro Sánchez Sanz
+
+
+En el archivo comprimido se incluyen los ficheros .c y .h implementados (y los que se nos daban), el makefile y algunos .dat para probar a enviar. En resumen:
+	- makefile: fichero makefile para compilar y enlazar los archivos de la práctica.
+	- interface.c y .h: ficheros que se nos proporcionan con diversas funciones para manejar sockets.
+	- practica4.c y .h: ficheros que hemos completado para la práctica. Queremos comentar algunas decisiones de implementación, como son que en el .h hemos cambiado el valor de ICMP_DATAGRAM_MAX de 48 a 64, ya que ponía que lo cambiásemos si era necesario y debido a que hacemos una comprobación de la longitud del mensaje al comienzo del módulo ICMP, debíamos hacerlo para que el "Probando a hacer un ping" se enviase. En el .c, además de en ese módulo, también hemos realizado control de longitudes al comienzo de los otros módulos. También hemos cambiado la variable global ID a n_secuencia, pues los identificadores de IP e ICMP los calculamos aleatoriamente (tal y como se dijo en clase) pero sin llegar a pasarse del número MAX_PROTOCOL. Por último, queremos mencionar que para que la implementación sea la estándar de Linux, hemos tenido que aumentar la pila de protocolos tanto en IP como en Ethernet.
+	- quijote.dat y mensaje.dat: son ficheros de texto para probar a enviar paquetes con fragmentación y sin ella, respectivamente.
