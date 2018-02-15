@@ -404,7 +404,7 @@ uint8_t moduloIP(uint8_t* segmento, uint64_t longitud, uint16_t* pila_protocolos
 			offset = (0xE000 | ((i*long_MTU)/8));
 			aux16 = htons(flags & offset);
 		} else {
-			aux16 = htons(resto/8);
+			aux16 = htons((num_fragmentos*long_MTU)/8);
 		}	
 		
 		memcpy(datagrama+pos, &aux16, sizeof(uint16_t));
