@@ -3,7 +3,7 @@
 
 from socket import *
 
-serverName = '192.168.1.45'
+serverName = '10.0.2.15'
 serverPort = 12001
 serverSocket = socket(AF_INET, SOCK_STREAM)
 serverSocket.bind((serverName, serverPort))
