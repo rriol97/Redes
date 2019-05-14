@@ -1,63 +1,54 @@
-################################################################################
-# Makefile con auto-deteccion de dependencias: nunca querras usar otro
-# (de tipo .h; las de linkado hay que enumerarlas)
-# Ver http://www.cs.washington.edu/orgs/acm/tutorials/dev-in-unix/makefiles.html
-################################################################################
+############################################################
+# Archivo Makefile del servidor multihilo sobre HTTP
+#
+# Autores: Ricardo Riol Gonzalez y Alejandro Sanchez Sanz
+############################################################
 
-# banderas de compilacion (PUEDE SER UTIL CAMBIARLAS)
-CC = gcc
-#ifdef ENTREGA
-CFLAGS = -Wall -g -I .
-LDLIBS = -lm 
-#else
-CFLAGS = -Wall -g -I .
-#-DENTREGA
-LDLIBS = -lm -lpcap
-#endif
+# Banderas de compilacion 
+CCFLAGS = -std=gnu11 -Wall -g
 
-# fuentes a considerar (si no se cambia, todos los '.c' del directorio actual)
-SOURCES = $(shell ls -1 *.c* | xargs)
+# Directorios
+SRC = ./src
+INCLIB = ./includes
+SRCLIB = ./srclib
+LIBS = ./lib
 
-# busca los ejecutables (todos los .c con metodo tipo 'int main')
-EXEC_SOURCES = $(shell grep -l "^int main" $(SOURCES) | xargs)
 
-# fich. de dependencia (.d) y nombres de ejecutables (los anteriores, sin '.c')
-EXECS = $(shell echo $(EXEC_SOURCES) | sed -e 's:\.c[p]*::g')
-DEPS = $(shell echo $(SOURCES) | sed -e 's:\.c[p]*:\.d:g')
+all : lib server 
+	rm -f *.o  # limpiamos los objetos pero no el ejecutable
 
-all:	servidor_tcp
+lib: 
+	@if [ ! -d lib ]; then\
+        mkdir lib;\
+    fi
 
-servidor_tcp:	servidor_tcp.o 
+# Ejecutable
+server: main.o $(LIBS)/libservidor.a $(LIBS)/libhttp.a $(LIBS)/libparser.a
+	gcc -o server $^ -L$(LIB) -lservidor -L$(LIB) -lhttp -L$(LIB) -lparser -lpthread -lconfuse  
 
-# receta para hacer un .d (dependencias automaticas de tipo .h para tus .o)
-%.d : %.c
-	@set -e; $(CC) -MM $(CFLAGS) $< \
-	| sed 's/\($*\)\.o[ :]*/\1.o $@ : /g' > $@; \
-	[ -s $@ ] || rm -f $@
+# Objetos
+main.o: $(SRC)/main.c
+	gcc $(CCFLAGS) -I$(INCLIB) -c $(SRC)/main.c
 
-#incluye las dependencias generadas
--include $(DEPS)
+servidor.o: $(SRCLIB)/servidor.c $(INCLIB)/servidor.h
+	gcc $(CCFLAGS) -I$(INCLIB) -c $(SRCLIB)/servidor.c
 
-# receta para hacer un .o
-%.o :	%.c
-	@echo -n compilando objeto \'$<\'...
-	@$(CC) $(CFLAGS) $< -c
-	@echo [OK]
+http.o:	$(SRCLIB)/http.c $(INCLIB)/http.h
+	gcc $(CCFLAGS) -I$(INCLIB) -c $(SRCLIB)/http.c
 
-# receta para hacer un ejecutable (suponiendo resto de dependencias OK)
-% :	%.o
-	@echo -n compilando ejecutable \'$@\'...
-	@$(CC) $(CFLAGS) $^ -o $@ $(LDLIBS)
-	@echo [OK]
+picohttpparser.o: $(SRCLIB)/picohttpparser.c $(INCLIB)/picohttpparser.h
+	gcc $(CCFLAGS) -I$(INCLIB) -c $(SRCLIB)/picohttpparser.c
 
-# limpieza
-clean:	
-	@rm -f $(wildcard *.o *.d core* *.P) $(EXECS)
+# Librerias
+$(LIBS)/libservidor.a: servidor.o
+	ar -rv $(LIBS)/libservidor.a servidor.o
 
-# ayuda (nunca viene mal)
-help:
-	@echo "Use: make <target> ..."
-	@echo "Valid targets:"
-	@$(MAKE) --print-data-base --question | sed -e "s:makefile::g" |\
-	awk '/^[^.%][-A-Za-z0-9_]*:/	\
-		{ print "   " substr($$1, 1, length($$1)-1) }'
+$(LIBS)/libhttp.a: http.o
+	ar -rv $(LIBS)/libhttp.a http.o
+
+$(LIBS)/libparser.a: picohttpparser.o
+	ar -rv $(LIBS)/libparser.a picohttpparser.o
+
+# Limpiar el directorio
+clean:
+	rm -f *.o server

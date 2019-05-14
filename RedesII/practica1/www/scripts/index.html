@@ -1,0 +1,28 @@
+<!-- Fichero html que permite al usuario introducir valores en los campos
+     de cualquiera de los scripts implementados en este directorio -->
+
+<html>
+<head><title>FORMULARIO SCRIPTS</title></head>
+<body>
+  <h2>SALUDO PYTHON</h2>
+  <form method="post" action="/scripts/saludo.py">
+    Nombre: <input type="text" name="nombre" size="25" /><br />
+    <input type="submit" value="SEND" />
+  </form>
+  <h2>CONVERSOR PYTHON</h2>
+  <form method="post" action="/scripts/conversor.py">
+    Temperatura Celsius: <input type="text" name="temp" size="25" /><br />
+    <input type="submit" value="SEND" />
+  </form>
+  <h2>SALUDO PHP</h2>
+  <form method="post" action="/scripts/saludo.php">
+    Nombre: <input type="text" name="nombre" size="25" /><br />
+    <input type="submit" value="SEND" />
+  </form>
+  <h2>CONVERSOR PHP</h2>
+  <form method="post" action="/scripts/conversor.php">
+    Temperatura Celsius: <input type="text" name="temp" size="25" /><br />
+    <input type="submit" value="SEND" />
+  </form>
+</body>
+</html>
